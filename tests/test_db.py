@@ -56,3 +56,18 @@ async def test_write_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).write_to_chat(0,0,"")
+
+
+@pytest.mark.asyncio
+async def test_leave_not_connected(create_storage):
+    db, *_ = await create_storage
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).leave_chat(0,0)
+
+
+@pytest.mark.asyncio
+async def test_enter_not_connected(create_storage):
+    db, *_ = await create_storage
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).enter_chat(0,0)
+
