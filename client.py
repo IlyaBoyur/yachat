@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import sys
-import uuid4
+import uuid
+import json
 # import aiohttp
 
 DEFAULT_HOST = "127.0.0.1"
@@ -24,19 +25,20 @@ class Client:
     async def signup(self):
         data = await self.send("POST /connect")
         _, uuid = data.split()
-        logger.info(f"uuid: {uuid}")
+        logger.info(f"My uuid: {uuid}")
         self.uuid = uuid
 
     async def get_status(self):
         if self.uuid:
             data = await self.send("GET /status")
-            logger.info("Current status: {data}")
+            logger.info(f"Current status: {data}")
 
 
-    async def post_send(self, peer: uuid4=None):
+    async def post_send(self, *, chat_id: uuid.uuid4=None, message=None):
         if self.uuid:
-            data = await self.send("POST /send")
-            logger.info("Result: {data}")
+            body = json.dumps(dict(author_id=self.uuid, chat_id=chat_id, message=message))
+            data = await self.send(f"POST /send {body}")
+            logger.info(f"Result: {data}")
 
 
     async def send(self, message=""):
@@ -48,13 +50,19 @@ class Client:
         writer.write(message.encode())
         await writer.drain()
 
-        data = await reader.read(self.limit)
-        logger.debug(f'Received: {data.decode()}')
+        response = await reader.read(self.limit)
+        data = response.decode()
+        logger.debug(f'Received: {data}')
 
         logger.debug('Closing the connection')
         writer.close()
         await writer.wait_closed()
         return data
+
+async def test_common_chat():
+    client = Client()
+    response = await client.signup()
+    response = await client.post_send(message="hello, world!")
 
 
 if __name__ == "__main__":
@@ -65,4 +73,5 @@ if __name__ == "__main__":
     )
 
     client = Client()
-    asyncio.run(client.send(sys.argv[1] if len(sys.argv) > 1 else "test"))
+    # asyncio.run(client.send(sys.argv[1] if len(sys.argv) > 1 else "test"))
+    asyncio.run(test_common_chat())
