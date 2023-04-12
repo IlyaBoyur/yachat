@@ -5,16 +5,17 @@ import logging
 import sys
 import uuid
 from dataclasses import dataclass
+import json
+
+from db import ChatStorage
+
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
 DEFAULT_LIMIT = 64000
 
 
-logger = logging.Logger(__name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-
-
+logger = logging.getLogger(__name__)
 
 
 class Server:
@@ -22,6 +23,7 @@ class Server:
         self.host = host
         self.port = port
         self.limit = limit
+        self.database = ChatStorage()
 
     @property
     def URL_METHOD_ACTION_MAP(self):
@@ -40,21 +42,51 @@ class Server:
     async def parse(self, message: str=""):
         if not message:
             return
-        method, url, body = message.split()
-        print(method, url, body, sep=" | ")
-        result = self.URL_METHOD_ACTION_MAP[url][method](body)
-        return result
+        try:
+            method, url, *body = message.split()
+            print(method, url, body, sep=" | ")
+            json_body = json.loads("".join(body)) if body else dict()
+            result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
+        except (ValueError, KeyError, TypeError) as error:
+            logger.exception(error)
+            return ""
+        else:
+            return result
 
-    def register(self, body: str):
-        while peer:= uuid.uuid4() in self.peers:
-            pass
-        return f"Toker: {peer}"
+    async def register(self, body: dict):
+        cursor = await self.database.connect()
+        peer = cursor.create_user()
+        logger.info(f"New peer: {peer}")
+        try:
+            cursor.enter_chat(peer, cursor.get_default_chat_id())
+        except Exception as e:
+            logger.exception(e)
+        cursor.disconnect()
+        return f"Token: {peer}"
 
-    def get_status(self, body: str):
+    async def get_status(self, body: dict):
         pass
 
-    def add_message(self, body: str):
-        self.connect_to_chat(0)
+    async def add_message(self, body: dict):
+        logger.info(f"body: {body}")
+
+        try:
+            cursor = await self.database.connect()
+            logger.info("Connected to db")
+
+            author_id = body["author_id"]
+            chat_id = body["chat_id"] or cursor.get_default_chat_id()
+            message = body["message"]
+            cursor.write_to_chat(author_id, chat_id, message)
+            result = "success"
+        except Exception as e:
+            logger.exception(e)
+            result = "fail"
+        finally:
+            cursor.disconnect()
+            logger.info("Disconnected from db")
+
+        return result
 
     async def client_connected_callback(self, reader: StreamReader, writer: StreamWriter):
         addr = writer.get_extra_info('peername')
@@ -65,7 +97,7 @@ class Server:
         response = await self.parse(message)
 
         logger.debug(f"Sending: {response}")
-        writer.write(response)
+        writer.write(response.encode())
         await writer.drain()
 
         logger.info("Closing the connection")
@@ -95,7 +127,7 @@ class Server:
 if __name__ == "__main__":
     logging.basicConfig(
         format="[%(levelname)s] - %(asctime)s - %(message)s",
-        level=logging.INFO,
+        level=logging.DEBUG,
         datefmt="%H:%M:%S",
     )
 
