@@ -3,7 +3,9 @@ import logging
 import sys
 import uuid
 import json
-# import aiohttp
+
+from db import User
+
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
@@ -57,6 +59,10 @@ class Client:
         writer.close()
         await writer.wait_closed()
         return data
+
+    def force_login(self, user: User):
+        self.uuid = user.id
+
 
 async def test_common_chat():
     client = Client()
