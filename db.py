@@ -23,16 +23,17 @@ class DbEncoder(JSONEncoder):
         return super().default(obj)
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class User:
     id: uuid.uuid4
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Message:
     id: uuid.uuid4
     created: datetime
     author: User
+    text: str
 
 
 @dataclass
@@ -43,23 +44,22 @@ class Chat:
     authors: set[User] = field(default_factory=set)
     size: int = 0
 
-    def add_message(self, author: uuid.uuid4, message: Message):
+    def add_message(self, message: Message):
         self.messages.add(message)
 
     def get_history(self, depth=DEFAULT_DEPTH):
-        print(self.messages)
         return sorted(
             self.messages,
             key=lambda obj: obj.created,
             reverse=True
         )[:depth]
 
-    def enter(self, author: uuid.uuid4):
+    def enter(self, author: User):
         if author not in self.authors:
             self.authors.add(author)
             self.size += 1
 
-    def leave(self, author: uuid.uuid4):
+    def leave(self, author: User):
         if author in self.authors:
             self.authors.discard(author)
             self.size -= 1
@@ -67,7 +67,7 @@ class Chat:
 
 @dataclass
 class PeerToPeerChat(Chat):
-    def enter(self, author: uuid.uuid4):
+    def enter(self, author: User):
         if len(self.authors) == 2:
             raise RuntimeError()
 
@@ -77,12 +77,17 @@ class NotConnectedError(RuntimeError):
     pass
 
 
+class NotExistError(RuntimeError):
+    """Requested object is not present in database"""
+    pass
+
+
 class ChatStorage:
     def __init__(self, max_connections=MAX_CONNECTIONS):
         self.connections = set()
         # self.chats = chats or defaultdict(Chat(uuid.uuid4(), "", set()))
         self.chats = dict()
-        self.users = set()
+        self.users = dict()
         self.max_connections = max_connections
 
     async def connect(self):
@@ -108,54 +113,77 @@ class ChatStorageCursor:
         return pytz.timezone("Europe/Moscow").localize(datetime.now())
 
     def disconnect(self):
-        self.db.disconnect(self)
+        self.db.disconnect(id(self))
 
-    def get_default_chat_id(self):
+    def get_default_chat_id(self) -> str:
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
-        chat_id = getattr(self.db, "default_chat_id", self.create_chat(name="default"))
-        self.db.default_chat_id = chat_id
-        return chat_id
+        if getattr(self.db, "default_chat_id", None) is None:
+            self.db.default_chat_id = self.create_chat(name="default")
+        return self.db.default_chat_id
 
-    def create_chat(self, **kwargs):
+    def enter_chat(self, author_id: str, chat_id: str):
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
-        chat_id = kwargs.pop("id", uuid.uuid4())
-        new_chat = Chat(chat_id, **kwargs)
-        self.db.chats[new_chat.id] = new_chat
-        return new_chat.id
+        if (author := self.get_user(author_id)) is None:
+            raise NotExistError
+        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+            raise NotExistError
+        self.db.chats[uuid.UUID(chat_id)].enter(uuid.UUID(author_id))
+        # chat.enter(author)
 
-    def enter_chat(self, author_id: uuid.uuid4, chat_id: uuid.uuid4):
+    def leave_chat(self, author_id: str, chat_id: str):
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
-        self.db.chats[chat_id].enter(author_id)
+        if (author := self.get_user(author_id)) is None:
+            raise NotExistError
+        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+            raise NotExistError
+        self.db.chats[uuid.UUID(chat_id)].leave(uuid.UUID(author_id))
+        # chat.leave(author)
 
-    def leave_chat(self, author_id: uuid.uuid4, chat_id: uuid.uuid4):
+    def write_to_chat(self, author_id: str, chat_id: str, message: str) -> None:
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
-        self.db.chats[chat_id].leave(author_id)
+        if (author := self.get_user(author_id)) is None:
+            raise NotExistError
+        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+            raise NotExistError
+        
+        # self.db.chats[chat_id].enter(author)
+        # self.db.chats[chat_id].add_message(Message(uuid.uuid4(), self.now(), author))
 
-    def write_to_chat(self, author_id: uuid.uuid4, chat_id: uuid.uuid4, message: str) -> None:
+        chat.enter(author)
+        chat.add_message(Message(uuid.uuid4(), self.now(), author, text=message))
+
+    def read_from_chat(self, chat_id: str, depth: int=DEFAULT_DEPTH) -> list[Chat]:
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
-        self.enter_chat(author_id, chat_id)
-        self.db.chats[chat_id].add_message(author_id, Message(uuid.uuid4(), self.now(), author_id))
-
-    def read_from_chat(self, chat_id: uuid.uuid4, depth: int=DEFAULT_DEPTH) -> list[Chat]:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
-        history = self.db.chats[chat_id].get_history(depth)
+        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+            raise NotExistError
+        # history = self.db.chats[chat_id].get_history(depth)
+        history = chat.get_history(depth)
         return json.dumps(history, indent=2, cls=DbEncoder)
 
-
-
-
-    def create_user(self):
+    def create_user(self) -> str:
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
         while (new_user:= uuid.uuid4()) in self.db.users:
             pass
-        self.db.users.add(new_user)
-        return new_user
+        self.db.users[new_user] = User(new_user)
+        return str(new_user)
 
+    def get_user(self, id: str) -> User:
+        return self.db.users.get(uuid.UUID(id), None)
 
+    def create_chat(self, **kwargs) -> str:
+        if not self.db.check_connected(id(self)):
+            raise NotConnectedError
+        kwargs.pop("id", None)
+        while (new_chat_id:= uuid.uuid4()) in self.db.chats:
+            pass
+        self.db.chats[new_chat_id] = Chat(id=new_chat_id, **kwargs)
+        return str(new_chat_id)
+
+    def get_chat(self, id: str) -> Chat:
+        return self.db.chats.get(uuid.UUID(id), None)
