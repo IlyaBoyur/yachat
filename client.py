@@ -10,8 +10,7 @@ DEFAULT_PORT = 8001
 DEFAULT_LIMIT = 64000
 
 
-logger = logging.Logger(__name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+logger = logging.getLogger(__name__)
 
 
 class Client:
@@ -63,12 +62,13 @@ async def test_common_chat():
     client = Client()
     response = await client.signup()
     response = await client.post_send(message="hello, world!")
+    response = await client.post_send(message="hello, new world!")
 
 
 if __name__ == "__main__":
     logging.basicConfig(
         format="[%(levelname)s] - %(asctime)s - %(message)s",
-        level=logging.INFO,
+        level=logging.DEBUG,
         datefmt="%H:%M:%S",
     )
 
