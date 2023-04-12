@@ -150,11 +150,10 @@ class ChatStorageCursor:
         if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
             raise NotExistError
         
-        # self.db.chats[chat_id].enter(author)
-        # self.db.chats[chat_id].add_message(Message(uuid.uuid4(), self.now(), author))
-
-        chat.enter(author)
-        chat.add_message(Message(uuid.uuid4(), self.now(), author, text=message))
+        self.db.chats[uuid.UUID(chat_id)].enter(uuid.UUID(author_id))
+        self.db.chats[uuid.UUID(chat_id)].add_message(Message(uuid.uuid4(), self.now(), uuid.UUID(author_id),text=message))
+        # chat.enter(author)
+        # chat.add_message(Message(uuid.uuid4(), self.now(), author, text=message))
 
     def read_from_chat(self, chat_id: str, depth: int=DEFAULT_DEPTH) -> list[Chat]:
         if not self.db.check_connected(id(self)):
