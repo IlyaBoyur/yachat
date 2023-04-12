@@ -6,22 +6,21 @@ from datetime import datetime, timedelta
 from db import ChatStorage, Chat, Message, DbEncoder, NotConnectedError, ChatStorageCursor
 
 
+@pytest.mark.asyncio
 @pytest.fixture
-def create_storage():
-    db = ChatStorage(
-        chats=[
-            Chat(
-                x,
-                "",
-                [
-                    Message(y, datetime.now()-timedelta(days=y),uuid.uuid4())
-                    for y in range(2)
-                ]
-            )
-            for x in range(2)
-        ],
-        max_connections=1,
-    )
+async def create_storage():
+    db = ChatStorage(max_connections=1)
+    cursor = await asyncio.create_task(db.connect())
+    [
+        cursor.create_chat(
+            id=chat_id,
+            name="",
+            messages=[Message(msg_id, datetime.now()-timedelta(days=msg_id),uuid.uuid4())
+                      for msg_id in range(2)]
+        )
+        for chat_id in range(2)
+    ]
+    cursor.disconnect()
     return db
 
 
@@ -41,20 +40,22 @@ async def test(create_storage):
         await asyncio.sleep(0.1)
         cursor.disconnect()
 
-    db = create_storage
+    db = await create_storage
     await dangler()
     data = await reader()
     print(data)
     assert data == json.dumps(db.chats[0].get_history(), indent=2, cls=DbEncoder)
 
 
-def test_read_not_connected(create_storage):
-    db = create_storage
+@pytest.mark.asyncio
+async def test_read_not_connected(create_storage):
+    db = await create_storage
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).read_from_chat(0)
 
 
-def test_write_not_connected(create_storage):
-    db = create_storage
+@pytest.mark.asyncio
+async def test_write_not_connected(create_storage):
+    db = await create_storage
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).write_to_chat(0,0,"")
