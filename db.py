@@ -38,15 +38,16 @@ class Message:
 class Chat:
     id: uuid.uuid4
     name: str
-    messages: list[Message]
+    messages: set[Message]
 
     def add_message(self, message: Message):
         self.messages.append(message)
 
-    def get_history(self):
-        return reversed(
+    def get_history(self, depth=DEFAULT_DEPTH):
+        return sorted(
             self.messages,
-            key=lambda obj: obj.created
+            key=lambda obj: obj.created,
+            reverse=True
         )[:depth]
 
 
@@ -57,8 +58,9 @@ class NotConnectedError(RuntimeError):
 
 
 class ChatStorage:
-    def __init__(self):
-        self.chats = defaultdict(Chat(uuid.uuid4(), "", list()))
+    def __init__(self, chats=None):
+        self.chats = chats or defaultdict(Chat(uuid.uuid4(), "", set()))
+        self.connected = False
 
     @staticmethod
     def now():
@@ -70,35 +72,37 @@ class ChatStorage:
     def disconnect(self):
         self.connected = False
 
-    def send_to_chat(author_id: uuid.uuid4, chat_id: uuid.uuid4, message: str):
+    def send_to_chat(self, author_id: uuid.uuid4, chat_id: uuid.uuid4, message: str) -> None:
         if not self.connected:
             raise NotConnectedError
         self.chats[chat_id].add_message(Message(uuid.uuid4(), now(), author_id))
 
-    def read_from_chat(chat_id: uuid.uuid4, depth: int=DEFAULT_DEPTH):
+    def read_from_chat(self, chat_id: uuid.uuid4, depth: int=DEFAULT_DEPTH) -> list[Chat]:
         if not self.connected:
             raise NotConnectedError
         history = self.chats[chat_id].get_history(depth)
         return json.dumps(history, indent=2, cls=DbEncoder)
 
 
+
+
 if __name__ == "__main__":
     from datetime import timedelta
-    from dataclasses import asdict
-    import json
 
-    chats = [
-        Chat(
-            x,
-            "",
-            [
-                Message(y, datetime.now()-timedelta(days=y),uuid.uuid4())
-                for y in range(2)
-            ]
-        )
-        for x in range(2)
-    ]
-    JSONData = json.dumps(chats, indent=2, cls=DbEncoder)
+    db = ChatStorage(
+        chats=[
+            Chat(
+                x,
+                "",
+                [
+                    Message(y, datetime.now()-timedelta(days=y),uuid.uuid4())
+                    for y in range(2)
+                ]
+            )
+            for x in range(2)
+        ]
+    )
+    db.connect()
+    JSONData = db.read_from_chat(0)
     print(JSONData)
-
-    # print(json.dumps([asdict(chat) for chat in chats]))
+    db.disconnect()
