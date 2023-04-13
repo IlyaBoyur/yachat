@@ -8,11 +8,11 @@ from dataclasses import dataclass
 import json
 import pytz
 from functools import wraps
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
-from constants import ChatType, DEFAULT_DEPTH
-from db import ChatStorage, DbEncoder, Message
-from errors import NotExistError
+from constants import ChatType, DEFAULT_DEPTH, DEFAULT_MSG_LIMIT, DEFAULT_MSG_LIMIT_PERIOD_HOURS
+from db import ChatStorage, DbEncoder, Message, User, Chat
+from errors import NotExistError, MsgLimitExceededError
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -24,11 +24,12 @@ logger = logging.getLogger(__name__)
 
 
 class Server:
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT, limit=DEFAULT_LIMIT):
+    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT, limit=DEFAULT_LIMIT, msg_limit_enabled=False):
         self.host = host
         self.port = port
         self.limit = limit
         self.database = ChatStorage()
+        self.msg_limit_enabled = msg_limit_enabled
 
     @property
     def URL_METHOD_ACTION_MAP(self):
@@ -93,6 +94,21 @@ class Server:
             result = {"fail": error}
         else:
             return result
+
+    def check_msg_limit_exceeded(self, cursor, user: User, chat: Chat):
+        is_target_msg = (
+            lambda obj: (
+                obj.author.id == user.id
+                and obj.created > self.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
+            )
+        )
+        if (
+            cursor.get_default_chat_id() == chat.id
+            and len(filter(is_target_msg, chat.messages)) > DEFAULT_MSG_LIMIT
+        ):
+            return True
+        return False
+
 
     @connect_db
     def register(self, cursor, body: dict):
@@ -186,6 +202,8 @@ class Server:
             raise NotExistError
         if (chat := cursor.get_chat(chat_id)) is None:
             raise NotExistError
+        if self.msg_limit_enabled and self.check_msg_limit_exceeded(cursor, author, chat):
+            raise MsgLimitExceededError
         
         new_message = Message(uuid.uuid4(), self.now(), author, text=message)
         chat.add_message(new_message)
