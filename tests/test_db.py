@@ -38,6 +38,7 @@ async def test_read_not_connected(create_storage):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_write_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):

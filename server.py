@@ -6,10 +6,12 @@ import sys
 import uuid
 from dataclasses import dataclass
 import json
+import pytz
 from functools import wraps
+from datetime import datetime, date
 
 from constants import ChatType
-from db import ChatStorage, DbEncoder
+from db import ChatStorage, DbEncoder, Message
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -69,6 +71,10 @@ class Server:
     def serialize(data: dict):
         return json.dumps(data, indent=2, cls=DbEncoder)
 
+    @staticmethod
+    def now():
+        return pytz.timezone("Europe/Moscow").localize(datetime.now())
+
     async def parse(self, message: str=""):
         if not message:
             return
@@ -97,7 +103,7 @@ class Server:
         chats = cursor.get_chat_list()
         chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
         return self.serialize({
-            "time": cursor.now(),
+            "time": self.now(),
             "connections_db_max": cursor.db.max_connections,
             "connections_db_now": len(cursor.db.connections),
             "chat_default": cursor.get_default_chat_id(),
@@ -154,11 +160,17 @@ class Server:
 
     @connect_db
     def add_message(self, cursor, body: dict):
-        author_id = body["author_id"]
-        chat_id = body["chat_id"] or cursor.get_default_chat_id()
-        message = body["message"]
-        new_message_id = cursor.write_to_chat(author_id, chat_id, message)
-        return self.serialize({"id": new_message_id})
+        author_id = body.get("author_id")
+        chat_id = body.get("chat_id") or cursor.get_default_chat_id()
+        message = body.get("message")
+        if (author := cursor.get_user(author_id)) is None:
+            raise NotExistError
+        if (chat := cursor.get_chat(chat_id)) is None:
+            raise NotExistError
+        
+        new_message = Message(uuid.uuid4(), self.now(), author, text=message)
+        chat.add_message(new_message)
+        return self.serialize({"id": new_message.id})
 
     async def client_connected_callback(self, reader: StreamReader, writer: StreamWriter):
         addr = writer.get_extra_info('peername')

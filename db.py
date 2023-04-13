@@ -1,6 +1,5 @@
 import uuid
 from dataclasses import dataclass, is_dataclass, asdict, field
-import pytz
 from datetime import datetime, date
 from collections import defaultdict
 import json
@@ -124,10 +123,6 @@ class ChatStorageCursor:
     def __init__(self, db: ChatStorage=None):
         self.db = db
 
-    @staticmethod
-    def now():
-        return pytz.timezone("Europe/Moscow").localize(datetime.now())
-
     def disconnect(self):
         self.db.disconnect(id(self))
 
@@ -157,19 +152,6 @@ class ChatStorageCursor:
             raise NotExistError
 
         chat.leave(author)
-
-    def write_to_chat(self, author_id: str, chat_id: str, message: str) -> None:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
-        if (author := self.get_user(author_id)) is None:
-            raise NotExistError
-        if (chat := self.get_chat(chat_id)) is None:
-            raise NotExistError
-        
-        message = Message(uuid.uuid4(), self.now(), author, text=message)
-        chat.add_message(message)
-        return message.id
-
 
     def create_user(self) -> str:
         if not self.db.check_connected(id(self)):
