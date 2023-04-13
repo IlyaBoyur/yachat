@@ -89,7 +89,7 @@ class Server:
         peer = cursor.create_user()
         logger.info(f"New peer: {peer}")
         cursor.enter_chat(peer, cursor.get_default_chat_id())
-        return f"Token: {peer}"
+        return self.serialize({"token": peer})
 
     @connect_db
     def get_status(self, cursor, body: dict):
@@ -130,7 +130,9 @@ class Server:
         print(chats)
 
         if not chats:
-            p2p_chat = cursor.create_chat(name="p2p", authors={user, other_user}, size=2)
+            p2p_chat = cursor.create_p2p_chat(name="p2p")
+            cursor.enter_chat(str(user.id), p2p_chat)
+            cursor.enter_chat(str(other_user.id), p2p_chat)
         else:
             p2p_chat = chats[0]
         return self.serialize({"chat_id": p2p_chat})
