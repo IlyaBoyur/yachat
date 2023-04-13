@@ -14,12 +14,12 @@ MAX_CONNECTIONS = 1
 
 class DbEncoder(JSONEncoder):
     def default(self, obj):
-        if is_dataclass(obj):
-            return asdict(obj)
-        if isinstance(obj, Chat):
-            return obj.get_history()
         if isinstance(obj, set):
             return list(obj)
+        if getattr(obj, "serialize", None):
+            return obj.serialize()
+        if is_dataclass(obj):
+            return asdict(obj)
         if isinstance(obj, (date, datetime,)):
             return obj.isoformat()
         if isinstance(obj, uuid.UUID):
@@ -51,13 +51,6 @@ class Chat:
     def add_message(self, message: Message):
         self.messages.add(message)
 
-    def get_history(self, depth=DEFAULT_DEPTH):
-        return sorted(
-            self.messages,
-            key=lambda obj: obj.created,
-            reverse=True
-        )[:depth]
-
     def enter(self, author: User):
         if author not in self.authors:
             self.authors.add(author)
@@ -67,6 +60,20 @@ class Chat:
         if author in self.authors:
             self.authors.discard(author)
             self.size -= 1
+
+    def serialize(self, depth=DEFAULT_DEPTH):
+        obj = dict(
+            id=self.id,
+            name=self.name,
+            messages=sorted(
+                self.messages,
+                key=lambda obj: obj.created,
+                reverse=True
+            )[:depth],
+            authors=self.authors,
+            size=self.size,
+        )
+        return obj
 
 
 @dataclass
@@ -89,7 +96,6 @@ class NotExistError(RuntimeError):
 class ChatStorage:
     def __init__(self, max_connections=MAX_CONNECTIONS):
         self.connections = set()
-        # self.chats = chats or defaultdict(Chat(uuid.uuid4(), "", set()))
         self.chats = dict()
         self.users = dict()
         self.max_connections = max_connections
@@ -157,7 +163,7 @@ class ChatStorageCursor:
             raise NotExistError
         
         self.db.chats[uuid.UUID(chat_id)].enter(self.get_user(author_id))
-        self.db.chats[uuid.UUID(chat_id)].add_message(Message(uuid.uuid4(), self.now(), uuid.UUID(author_id),text=message))
+        self.db.chats[uuid.UUID(chat_id)].add_message(Message(uuid.uuid4(), self.now(), self.get_user(author_id),text=message))
         # chat.enter(author)
         # chat.add_message(Message(uuid.uuid4(), self.now(), author, text=message))
 
@@ -167,7 +173,7 @@ class ChatStorageCursor:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         # history = self.db.chats[chat_id].get_history(depth)
-        history = chat.get_history(depth)
+        history = chat.serialize(depth)
         return json.dumps(history, indent=2, cls=DbEncoder)
 
     def create_user(self) -> str:
@@ -193,5 +199,5 @@ class ChatStorageCursor:
     def get_chat(self, id: str) -> Chat:
         return self.db.chats.get(uuid.UUID(id), None)
 
-    def get_chat_list(self):
+    def get_chat_list(self) -> list[Chat]:
         return self.db.chats.values()

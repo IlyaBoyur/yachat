@@ -25,7 +25,7 @@ async def test(create_storage):
     db, chats, *_ = await create_storage
     await dangler()
     chat, data = await reader()
-    assert data == json.dumps(db.chats[uuid.UUID(chat)].get_history(), indent=2, cls=DbEncoder)
+    assert data == json.dumps(db.chats[uuid.UUID(chat)].serialize(), indent=2, cls=DbEncoder)
 
 
 @pytest.mark.asyncio
