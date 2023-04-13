@@ -1,11 +1,11 @@
 import asyncio
+import json
 import pytest
+import uuid
 
-from server import Server
 from client import ChatClient
 from db import User
-import json
-import uuid
+from server import Server
 
 
 @pytest.fixture
@@ -40,13 +40,14 @@ def client_auth(client):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_register(client, server):
-    
-    response = await client.signup()
-    
-    response_json = json.loads(response)
-    assert response_json == "Token: 100500"
+    client.host = server.host
+    client.port = server.port
+
+    await client.signup()
+
+    assert uuid.UUID(client.uuid) in server.database.users
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip
@@ -64,7 +65,6 @@ async def test_send_message_common(client_auth, server):
 
 
 @pytest.mark.asyncio
-# @pytest.mark.skip
 async def test_connect_p2p(client, client_other, server):
     client.port=server.port
     await client.signup()
@@ -87,6 +87,7 @@ async def test_send_message_p2p(client_auth, server, create_p2p):
     response_json = json.loads(response)
 
     assert len(chat.messages) == 1
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip
