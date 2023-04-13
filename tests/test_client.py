@@ -1,10 +1,7 @@
 import asyncio
 import pytest
-import uuid
 import json
-from datetime import datetime, timedelta
 
-from db import ChatStorage, Chat, Message, DbEncoder, NotConnectedError, ChatStorageCursor
 from client import Client
 from db import User
 
