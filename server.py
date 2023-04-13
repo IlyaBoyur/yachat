@@ -64,9 +64,9 @@ class Server:
 
                 result = func(self, cursor, *args, **kwargs)
 
-            except Exception as e:
-                logger.exception(e)
-                result = {"fail": e}
+            except Exception as exception:
+                logger.exception(exception)
+                result = self.serialize({"fail": str(exception)})
             finally:
                 cursor.disconnect()
             return result
@@ -91,7 +91,7 @@ class Server:
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
         except (ValueError, KeyError, TypeError) as error:
             logger.exception(error)
-            result = {"fail": error}
+            result = self.serialize({"fail": str(error)})
         else:
             return result
 
