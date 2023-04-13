@@ -21,6 +21,18 @@ def server(event_loop, unused_tcp_port):
 
 
 @pytest.fixture
+def server_msg_limit(event_loop, unused_tcp_port):
+    server = Server(port=unused_tcp_port, msg_limit_enabled=True)
+    cancel_handle = asyncio.ensure_future(server.listen(), loop=event_loop)
+    event_loop.run_until_complete(asyncio.sleep(0.01))
+
+    try:
+        yield server
+    finally:
+        cancel_handle.cancel()
+
+
+@pytest.fixture
 def client():
     client = ChatClient()
     return client
@@ -220,3 +232,20 @@ async def test_no_chat_limit(client, client_other, server):
 
     assert len(response_json["chats"]) == 1
     assert len(response_json["chats"][0]["messages"]) == 25
+
+
+@pytest.mark.asyncio
+async def test_chat_limit_enabled(client, server_msg_limit):
+    """No messages are sent if chat limit is exceeded"""
+    client.port = server_msg_limit.port
+    await client.signup()
+    data_default = dict(author_id=client.uuid,
+                        chat_id=None,
+                        message="")
+    [await client.post("/send", data=data_default) for _ in range(22)]
+
+    response = await client.get("/chats", data=dict(user_id=client.uuid, depth=100))
+    response_json = json.loads(response)
+
+    assert len(response_json["chats"]) == 1
+    assert len(response_json["chats"][0]["messages"]) == 20

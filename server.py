@@ -103,8 +103,8 @@ class Server:
             )
         )
         if (
-            cursor.get_default_chat_id() == chat.id
-            and len(filter(is_target_msg, chat.messages)) > DEFAULT_MSG_LIMIT
+            cursor.get_default_chat_id() == str(chat.id)
+            and len(list(filter(is_target_msg, chat.messages))) >= DEFAULT_MSG_LIMIT
         ):
             return True
         return False
