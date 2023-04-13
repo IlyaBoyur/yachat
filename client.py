@@ -23,23 +23,29 @@ class Client:
         self.limit = limit
         self.uuid = None
 
+    async def get(self, url: str, *, data: dict=""):
+        return await self.send(f"GET {url} {json.dumps(data)}")
+
+    async def post(self, url, *, data: dict=""):
+        return await self.send(f"POST {url} {json.dumps(data)}")
+
     async def signup(self):
-        data = await self.send("POST /connect")
+        data = await self.post("/connect")
         _, uuid = data.split()
         logger.info(f"My uuid: {uuid}")
         self.uuid = uuid
 
     async def get_status(self):
         if self.uuid:
-            body = json.dumps(dict(user_id=self.uuid))
-            data = await self.send(f"GET /status {body}")
+            body = dict(user_id=self.uuid)
+            data = await self.get("/status", data=body)
             logger.info(f"Current status: {data}")
 
 
     async def post_send(self, *, chat_id: uuid.uuid4=None, message=None):
         if self.uuid:
-            body = json.dumps(dict(author_id=self.uuid, chat_id=chat_id, message=message))
-            data = await self.send(f"POST /send {body}")
+            body = dict(author_id=self.uuid, chat_id=chat_id, message=message)
+            data = await self.post("/send", data=body)
             logger.info(f"Result: {data}")
 
 
@@ -71,7 +77,7 @@ async def test_common_chat():
     response = await client.post_send(message="hello, world!")
     response = await client.post_send(message="hello, new world!")
     response = await client.get_status()
-    response = await client.send(f"GET /chats {json.dumps(dict(user_id=client.uuid))}")
+    response = await client.get("/chats", data=dict(user_id=client.uuid))
 
 
 if __name__ == "__main__":
