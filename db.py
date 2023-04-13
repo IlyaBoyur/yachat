@@ -146,8 +146,7 @@ class ChatStorageCursor:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
 
-        self.db.chats[uuid.UUID(chat_id)].enter(self.get_user(author_id))
-        # chat.enter(author)
+        chat.enter(author)
 
     def leave_chat(self, author_id: str, chat_id: str):
         if not self.db.check_connected(id(self)):
@@ -157,8 +156,7 @@ class ChatStorageCursor:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
 
-        self.db.chats[uuid.UUID(chat_id)].leave(self.get_user(author_id))
-        # chat.leave(author)
+        chat.leave(author)
 
     def write_to_chat(self, author_id: str, chat_id: str, message: str) -> None:
         if not self.db.check_connected(id(self)):
@@ -168,12 +166,10 @@ class ChatStorageCursor:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         
-        # self.db.chats[uuid.UUID(chat_id)].enter(self.get_user(author_id))
-        message = Message(uuid.uuid4(), self.now(), self.get_user(author_id),text=message)
-        self.db.chats[uuid.UUID(chat_id)].add_message(message)
+        message = Message(uuid.uuid4(), self.now(), author, text=message)
+        chat.add_message(message)
         return message.id
-        # chat.enter(author)
-        # chat.add_message(Message(uuid.uuid4(), self.now(), author, text=message))
+
 
     def read_from_chat(self, chat_id: str, depth: int=DEFAULT_DEPTH) -> list[Chat]:
         if not self.db.check_connected(id(self)):
