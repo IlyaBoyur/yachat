@@ -12,7 +12,7 @@ from datetime import datetime, date
 
 from constants import ChatType
 from db import ChatStorage, DbEncoder, Message
-
+from errors import NotExistError
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
@@ -47,6 +47,9 @@ class Server:
             "/connect_p2p": {
                 "POST": self.enter_p2p
             },
+            "/chats/exit": {
+                "POST": self.leave
+            }
         }
 
     @staticmethod
@@ -158,6 +161,17 @@ class Server:
             p2p_chat = chats[0]
         return self.serialize({"chat_id": p2p_chat_id})
 
+    @connect_db
+    def leave(self, cursor, body: dict):
+        user_id = body.get("user_id")
+        chat_id = body.get("chat_id")
+
+        if (author := cursor.get_user(user_id)) is None:
+            raise NotExistError
+        if (chat := cursor.get_chat(chat_id)) is None:
+            raise NotExistError
+
+        chat.leave(author)
 
     @connect_db
     def add_message(self, cursor, body: dict):

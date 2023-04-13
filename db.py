@@ -8,6 +8,7 @@ import asyncio
 from typing import ClassVar
 
 from constants import ChatType
+from errors import NotConnectedError
 
 
 DEFAULT_DEPTH = 20
@@ -88,14 +89,7 @@ class PeerToPeerChat(Chat):
         super().enter(*args, **kwargs)
 
 
-class NotConnectedError(RuntimeError):
-    """Operation is rejected because no established connection found"""
-    pass
 
-
-class NotExistError(RuntimeError):
-    """Requested object is not present in database"""
-    pass
 
 
 class ChatStorage:
@@ -125,6 +119,15 @@ class ChatStorageCursor:
 
     def disconnect(self):
         self.db.disconnect(id(self))
+    
+    @staticmethod
+    def check_connected(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            if not self.db.check_connected(id(self)):
+                raise NotConnectedError
+            return func(*args, **kwargs)
+        return inner
 
     def get_default_chat_id(self) -> str:
         if not self.db.check_connected(id(self)):
@@ -132,16 +135,6 @@ class ChatStorageCursor:
         if getattr(self.db, "default_chat_id", None) is None:
             self.db.default_chat_id = self.create_chat(name="default")
         return self.db.default_chat_id
-
-    def leave_chat(self, author_id: str, chat_id: str):
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
-        if (author := self.get_user(author_id)) is None:
-            raise NotExistError
-        if (chat := self.get_chat(chat_id)) is None:
-            raise NotExistError
-
-        chat.leave(author)
 
     def create_user(self) -> str:
         if not self.db.check_connected(id(self)):
