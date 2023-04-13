@@ -84,7 +84,8 @@ async def test_send_message_default(client, server):
 
     _, chat = server.database.chats.popitem()
     assert len(chat.messages) == 1
-    message = chat.messages.pop()
+    _, message = chat.messages.popitem()
+
     assert response_json["id"] == str(message.id)
     assert TEST_MESSAGE == str(message.text)
     assert client.uuid == str(message.author.id)
@@ -130,7 +131,7 @@ async def test_send_message_p2p(create_p2p):
     assert client_other.uuid in p2p_chat_authors
     assert p2p_chat.size == 2
     assert len(p2p_chat.messages) == 1
-    assert msg_uuid in {msg.id for msg in p2p_chat.messages}
+    assert msg_uuid in {msg.id for msg in p2p_chat.messages.values()}
 
 
 @pytest.mark.asyncio
@@ -164,6 +165,24 @@ async def test_get_chats(client, server):
     assert len(chat["messages"]) == 0
     assert len(chat["authors"]) == 1
     assert chat["authors"][0]["id"] == client.uuid
+
+
+@pytest.mark.asyncio
+async def test_get_chats_single(create_p2p):
+    client, client_other, server, chat_id = await create_p2p
+
+    response = await client.get("/chats", data=dict(user_id=client.uuid, chat_id=chat_id))
+    response_json = json.loads(response)
+    chat = response_json["history"]
+
+    assert len(chat["messages"]) == 0
+    assert "id" in chat
+    assert "name" in chat
+    assert len(chat["messages"]) == 0
+    assert len(chat["authors"]) == 2
+    authors = [author["id"] for author in chat["authors"]]
+    assert client.uuid in authors
+    assert client_other.uuid in authors
 
 
 @pytest.mark.asyncio
@@ -249,3 +268,28 @@ async def test_chat_limit_enabled(client, server_msg_limit):
 
     assert len(response_json["chats"]) == 1
     assert len(response_json["chats"][0]["messages"]) == 20
+
+
+@pytest.mark.asyncio
+async def test_comment_p2p(create_p2p):
+    """One can comment on other`s messages in p2p chat"""
+    client, client_other, server, chat_id = await create_p2p
+
+    data = dict(author_id=client.uuid,
+                chat_id=chat_id,
+                message="")
+    response = await client.post("/send", data=data)
+    first_id = json.loads(response)["id"]
+
+    data = dict(author_id=client_other.uuid,
+                chat_id=chat_id,
+                message="",
+                comment_on=first_id)
+    response = await client_other.post("/send", data=data)
+    last_id = json.loads(response)["id"]
+
+    response = await client.get("/chats", data=dict(user_id=client.uuid, chat_id=chat_id))
+    response_json = json.loads(response)
+    assert len(response_json["history"]["messages"]) == 2
+    assert response_json["history"]["messages"][0]["id"] == last_id
+    assert response_json["history"]["messages"][0]["is_comment_on"] == first_id

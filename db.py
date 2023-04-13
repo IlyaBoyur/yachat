@@ -5,7 +5,7 @@ from collections import defaultdict
 import json
 from json import JSONEncoder
 import asyncio
-from typing import ClassVar, Self
+from typing import ClassVar, Iterable, Any
 from functools import wraps
 
 from constants import ChatType, DEFAULT_DEPTH
@@ -41,7 +41,7 @@ class Message:
     created: datetime
     author: User
     text: str
-    is_comment_on: Self = None
+    is_comment_on: uuid.UUID = None
 
 
 @dataclass
@@ -49,12 +49,14 @@ class Chat:
     id: uuid.UUID
     name: str
     type: ClassVar[ChatType] = ChatType.COMMON
-    messages: set[Message] = field(default_factory=set)
+    # messages: set[Message] = field(default_factory=set)
+    messages: dict[Message] = field(default_factory=dict)
     authors: set[User] = field(default_factory=set)
     size: int = 0
 
     def add_message(self, message: Message):
-        self.messages.add(message)
+        # self.messages.add(message)
+        self.messages[message.id] = message
 
     def enter(self, author: User):
         if author not in self.authors:
@@ -71,7 +73,7 @@ class Chat:
             id=self.id,
             name=self.name,
             messages=sorted(
-                self.messages,
+                self.messages.values(),
                 key=lambda obj: obj.created,
                 reverse=True
             )[:depth],
@@ -130,6 +132,13 @@ class ChatStorageCursor:
             return func(self, *args, **kwargs)
         return inner
     
+    @staticmethod
+    def first_non_none(sequence: Iterable[Any]):
+        return next(
+            (item for item in sequence if item is not None),
+            None
+        )
+
     @check_connected
     def create_user(self) -> str:
         while (new_user:= uuid.uuid4()) in self.db.users:
@@ -171,3 +180,9 @@ class ChatStorageCursor:
     @check_connected
     def get_chat_list(self) -> list[Chat]:
         return self.db.chats.values()
+
+    @check_connected
+    def get_message(self, pk: str) -> Message:
+        return self.first_non_none(
+            chat.messages.get(uuid.UUID(pk)) for chat in self.db.chats.values()
+        )

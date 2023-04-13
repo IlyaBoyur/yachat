@@ -104,7 +104,7 @@ class Server:
         )
         target_is_default_chat = cursor.get_default_chat_id() == str(chat.id)
         msg_count_exceeds_limit = (
-            len(list(filter(is_target_msg, chat.messages))) >= DEFAULT_MSG_LIMIT
+            len(list(filter(is_target_msg, chat.messages.values()))) >= DEFAULT_MSG_LIMIT
         )
         if target_is_default_chat and msg_count_exceeds_limit:
             return True
@@ -148,7 +148,6 @@ class Server:
             "chats": [chat.serialize(depth) for chat in chats_with_user],
         })
 
-    @connect_db
     def get_chat(self, cursor, pk, body: dict):
         if (chat := cursor.get_chat(pk)) is None:
             raise NotExistError
@@ -206,6 +205,9 @@ class Server:
         if self.msg_limit_enabled and self.check_msg_limit_exceeded(cursor, author, chat):
             raise MsgLimitExceededError
         comment_on = body.get("comment_on")
+        if comment_on is not None and cursor.get_message(comment_on) is None:
+                comment_on = None
+                logger.warning("Target to comment on is not found")
 
         new_message = Message(uuid.uuid4(), self.now(), author, text=message, is_comment_on=comment_on)
         chat.add_message(new_message)
