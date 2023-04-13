@@ -80,5 +80,7 @@ if __name__ == "__main__":
     )
 
     client = Client()
-    # asyncio.run(client.send(sys.argv[1] if len(sys.argv) > 1 else "test"))
-    asyncio.run(test_common_chat())
+    if len(sys.argv) > 1:
+        asyncio.run(client.send(sys.argv[1]))
+    else:
+        asyncio.run(test_common_chat())
