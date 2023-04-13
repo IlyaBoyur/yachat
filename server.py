@@ -102,10 +102,11 @@ class Server:
                 and obj.created > self.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
             )
         )
-        if (
-            cursor.get_default_chat_id() == str(chat.id)
-            and len(list(filter(is_target_msg, chat.messages))) >= DEFAULT_MSG_LIMIT
-        ):
+        target_is_default_chat = cursor.get_default_chat_id() == str(chat.id)
+        msg_count_exceeds_limit = (
+            len(list(filter(is_target_msg, chat.messages))) >= DEFAULT_MSG_LIMIT
+        )
+        if target_is_default_chat and msg_count_exceeds_limit:
             return True
         return False
 
