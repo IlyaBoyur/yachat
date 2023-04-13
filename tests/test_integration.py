@@ -125,7 +125,7 @@ async def test_get_status(client, server):
 
     response = await client.get("/status", data=dict(user_id=client.uuid))
     response_json = json.loads(response)
-    print(response_json)
+
     assert "time" in response_json
     assert response_json["connections_db_max"] == server.database.max_connections
     assert response_json["connections_db_now"] == 1
@@ -135,15 +135,53 @@ async def test_get_status(client, server):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
 async def test_get_chats(client, server):
     client.port = server.port
     await client.signup()
 
-    response = await client_auth.post_send(message="Hello, world!")
+    response = await client.get("/chats", data=dict(user_id=client.uuid))
     response_json = json.loads(response)
 
+    assert len(response_json["chats"]) == 1
+    chat = response_json["chats"][0]
+    assert "id" in chat
+    assert "name" in chat
+    assert len(chat["messages"]) == 0
+    assert len(chat["authors"]) == 1
+    assert chat["authors"][0]["id"] == client.uuid
+
+
+@pytest.mark.asyncio
+async def test_sequence(create_p2p):
+    client, client_other, server, chat_id = await create_p2p
+    TEST_MESSAGE = "test_message"
+    data_default = dict(author_id=client.uuid,
+                        chat_id=None,
+                        message=TEST_MESSAGE)
+    data_p2p = dict(author_id=client.uuid,
+                    chat_id=chat_id,
+                    message=TEST_MESSAGE)
+    [await client.post("/send", data=data_default) for _ in range(3)]
+    [await client.post("/send", data=data_p2p) for _ in range(2)]
+
     response = await client.get("/chats", data=dict(user_id=client.uuid))
+    response_json = json.loads(response)
+
+    assert len(response_json["chats"]) == 2
+    default = response_json["chats"][0]
+    assert default["name"] == "default"
+    assert len(default["messages"]) == 3
+    assert len(default["authors"]) == 2
+
+    p2p = response_json["chats"][1]
+    assert p2p["name"] == "p2p"
+    assert len(p2p["messages"]) == 2
+    assert len(p2p["authors"]) == 2
+    
+
+
+# @pytest.mark.asyncio
+# async def test_default_chat_limit(create_p2p):
 
 # @pytest.mark.asyncio
 # async def test_common_chat(mocker, create_storage):
