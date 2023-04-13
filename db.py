@@ -130,7 +130,7 @@ class ChatStorageCursor:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
 
-        self.db.chats[uuid.UUID(chat_id)].enter(uuid.UUID(author_id))
+        self.db.chats[uuid.UUID(chat_id)].enter(self.get_user(author_id))
         # chat.enter(author)
 
     def leave_chat(self, author_id: str, chat_id: str):
@@ -141,7 +141,7 @@ class ChatStorageCursor:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
 
-        self.db.chats[uuid.UUID(chat_id)].leave(uuid.UUID(author_id))
+        self.db.chats[uuid.UUID(chat_id)].leave(self.get_user(author_id))
         # chat.leave(author)
 
     def write_to_chat(self, author_id: str, chat_id: str, message: str) -> None:
@@ -188,3 +188,6 @@ class ChatStorageCursor:
 
     def get_chat(self, id: str) -> Chat:
         return self.db.chats.get(uuid.UUID(id), None)
+
+    def get_chat_list(self):
+        return self.db.chats.values()
