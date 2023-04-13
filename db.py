@@ -127,9 +127,9 @@ class ChatStorageCursor:
             raise NotConnectedError
         if (author := self.get_user(author_id)) is None:
             raise NotExistError
-        # if (chat := self.db.chats.get(uuid.UUID(chat_id))) is None:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
+
         self.db.chats[uuid.UUID(chat_id)].enter(uuid.UUID(author_id))
         # chat.enter(author)
 
@@ -138,9 +138,9 @@ class ChatStorageCursor:
             raise NotConnectedError
         if (author := self.get_user(author_id)) is None:
             raise NotExistError
-        # if (chat := self.db.chats.get(uuid.UUID(chat_id))) is None:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
+
         self.db.chats[uuid.UUID(chat_id)].leave(uuid.UUID(author_id))
         # chat.leave(author)
 
@@ -149,7 +149,6 @@ class ChatStorageCursor:
             raise NotConnectedError
         if (author := self.get_user(author_id)) is None:
             raise NotExistError
-        # if (chat := self.db.chats.get(uuid.UUID(chat_id))) is None:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         
@@ -161,7 +160,7 @@ class ChatStorageCursor:
     def read_from_chat(self, chat_id: str, depth: int=DEFAULT_DEPTH) -> list[Chat]:
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
-        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+        if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         # history = self.db.chats[chat_id].get_history(depth)
         history = chat.get_history(depth)
