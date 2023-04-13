@@ -14,6 +14,7 @@ from constants import ChatType
 from db import ChatStorage, DbEncoder, Message
 from errors import NotExistError
 
+
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
 DEFAULT_LIMIT = 64000

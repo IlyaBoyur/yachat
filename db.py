@@ -137,8 +137,10 @@ class ChatStorageCursor:
         self.db.users[new_user] = User(new_user)
         return str(new_user)
 
-    def get_user(self, id: str) -> User:
-        return self.db.users.get(uuid.UUID(id), None)
+    def get_user(self, pk: str) -> User:
+        if not self.db.check_connected(id(self)):
+            raise NotConnectedError
+        return self.db.users.get(uuid.UUID(pk), None)
 
     def get_default_chat_id(self) -> str:
         if not self.db.check_connected(id(self)):
@@ -165,8 +167,10 @@ class ChatStorageCursor:
         self.db.chats[new_chat_id] = PeerToPeerChat(id=new_chat_id, **kwargs)
         return str(new_chat_id)
 
-    def get_chat(self, id: str) -> Chat:
-        return self.db.chats.get(uuid.UUID(id), None)
+    def get_chat(self, pk: str) -> Chat:
+        if not self.db.check_connected(id(self)):
+            raise NotConnectedError
+        return self.db.chats.get(uuid.UUID(pk), None)
 
     def get_chat_list(self) -> list[Chat]:
         if not self.db.check_connected(id(self)):
