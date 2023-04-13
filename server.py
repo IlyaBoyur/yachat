@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass
 import json
 
-from db import ChatStorage
+from db import ChatStorage, DbEncoder
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -44,6 +44,7 @@ class Server:
             return
         try:
             method, url, *body = message.split()
+            print(method, url, body, sep="||")
             json_body = json.loads("".join(body)) if body else dict()
             logger.info(f"body: {json_body}")
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
@@ -54,18 +55,42 @@ class Server:
             return result
 
     async def register(self, body: dict):
-        cursor = await self.database.connect()
-        peer = cursor.create_user()
-        logger.info(f"New peer: {peer}")
         try:
+            cursor = await self.database.connect()
+            peer = cursor.create_user()
+            logger.info(f"New peer: {peer}")
             cursor.enter_chat(peer, cursor.get_default_chat_id())
+            result = f"Token: {peer}"
         except Exception as e:
             logger.exception(e)
-        cursor.disconnect()
-        return f"Token: {peer}"
+            result = "fail"
+        finally:
+            cursor.disconnect()
+        return result
 
     async def get_status(self, body: dict):
-        pass
+        try:
+            cursor = await self.database.connect()
+            logger.info("Connected to db")
+
+            user = cursor.get_user(body["user_id"])
+            chats = cursor.get_chat_list()
+            chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
+            result = json.dumps({
+                "time": cursor.now(),
+                "connections_max": cursor.db.max_connections,
+                "connections_now": len(cursor.db.connections),
+                "chat_default": cursor.get_default_chat_id(),
+                "chats_count": len(chats),
+                "chats_with_user_count": len(chats_with_user),
+            }, cls=DbEncoder)
+        except Exception as e:
+            logger.exception(e)
+            result = "fail"
+        finally:
+            cursor.disconnect()
+            logger.info("Disconnected from db")
+        return result
 
     async def add_message(self, body: dict):
         try:
@@ -130,4 +155,3 @@ if __name__ == "__main__":
 
     server = Server()
     asyncio.run(server.listen())
-
