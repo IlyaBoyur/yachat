@@ -171,15 +171,6 @@ class ChatStorageCursor:
         return message.id
 
 
-    def read_from_chat(self, chat_id: str, depth: int=DEFAULT_DEPTH) -> list[Chat]:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
-        if (chat := self.get_chat(chat_id)) is None:
-            raise NotExistError
-
-        history = chat.serialize(depth)
-        return json.dumps(history, indent=2, cls=DbEncoder)
-
     def create_user(self) -> str:
         if not self.db.check_connected(id(self)):
             raise NotConnectedError

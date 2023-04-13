@@ -107,11 +107,25 @@ class Server:
 
     @connect_db
     def get_chats(self, cursor, body: dict):
+        if (chat_id := body.get("chat_id")) is not None:
+            return self.get_chat(cursor, chat_id, body)
         user = cursor.get_user(body["user_id"])
         chats = cursor.get_chat_list()
         chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
         return self.serialize({
             "chats": chats_with_user,
+        })
+
+    @connect_db
+    def get_chat(self, cursor, pk, body: dict):
+        if (chat := cursor.get_chat(pk)) is None:
+            raise NotExistError
+        if (user := cursor.get_user(body["user_id"])) not in chat.authors:
+            raise NotExistError
+
+        history = chat.serialize(body.get("depth") or DEFAULT_DEPTH)
+        return self.serialize({
+            "history": chat,
         })
 
     @connect_db
