@@ -84,9 +84,8 @@ async def test_connect_p2p(client, client_other, server):
     response = await client.post(
         "/connect_p2p", data=dict(user_id=client.uuid, other_user_id=client_other.uuid)
     )
-    response_json = json.loads(response)
-    chat_uuid = uuid.UUID(response_json["chat_id"])
 
+    chat_uuid = uuid.UUID(json.loads(response)["chat_id"])
     p2p_chat = server.database.chats[chat_uuid]
     p2p_chat_authors = {str(user.id) for user in p2p_chat.authors}
     assert client.uuid in p2p_chat_authors
@@ -109,7 +108,6 @@ async def test_send_message_p2p(create_p2p):
     response_json = json.loads(response)
 
     msg_uuid = uuid.UUID(response_json["id"])
-
     p2p_chat = server.database.chats[uuid.UUID(chat_id)]
     p2p_chat_authors = {str(user.id) for user in p2p_chat.authors}
     assert client.uuid in p2p_chat_authors
@@ -121,10 +119,19 @@ async def test_send_message_p2p(create_p2p):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
-async def test_get_status(client_auth, server):
-    response = await client_auth.post_send(message="Hello, world!")
+async def test_get_status(client, server):
+    client.port = server.port
+    await client.signup()
+
+    response = await client.get("/status", data=dict(user_id=client.uuid))
     response_json = json.loads(response)
+    print(response_json)
+    assert "time" in response_json
+    assert response_json["connections_db_max"] == server.database.max_connections
+    assert response_json["connections_db_now"] == 1
+    assert "chat_default" in response_json
+    assert response_json["chats_count"] == 1
+    assert response_json["chats_with_user_count"] == 1
 
 
 @pytest.mark.asyncio
