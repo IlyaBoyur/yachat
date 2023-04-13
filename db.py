@@ -83,9 +83,10 @@ class Chat:
 @dataclass
 class PeerToPeerChat(Chat):
     type: ClassVar[ChatType] = ChatType.PRIVATE
-    def enter(self, author: User):
+    def enter(self, *args, **kwargs):
         if len(self.authors) == 2:
             raise RuntimeError()
+        super().enter(*args, **kwargs)
 
 
 class NotConnectedError(RuntimeError):
@@ -201,6 +202,15 @@ class ChatStorageCursor:
         while (new_chat_id:= uuid.uuid4()) in self.db.chats:
             pass
         self.db.chats[new_chat_id] = Chat(id=new_chat_id, **kwargs)
+        return str(new_chat_id)
+
+    def create_p2p_chat(self, **kwargs) -> str:
+        if not self.db.check_connected(id(self)):
+            raise NotConnectedError
+        kwargs.pop("id", None)
+        while (new_chat_id:= uuid.uuid4()) in self.db.chats:
+            pass
+        self.db.chats[new_chat_id] = PeerToPeerChat(id=new_chat_id, **kwargs)
         return str(new_chat_id)
 
     def get_chat(self, id: str) -> Chat:
