@@ -10,7 +10,7 @@ import pytz
 from functools import wraps
 from datetime import datetime, date
 
-from constants import ChatType
+from constants import ChatType, DEFAULT_DEPTH
 from db import ChatStorage, DbEncoder, Message
 from errors import NotExistError
 
@@ -121,11 +121,14 @@ class Server:
     def get_chats(self, cursor, body: dict):
         if (chat_id := body.get("chat_id")) is not None:
             return self.get_chat(cursor, chat_id, body)
-        user = cursor.get_user(body["user_id"])
+        if (user := cursor.get_user(body["user_id"])) is None:
+            raise NotExistError
+        depth = body.get("depth") or DEFAULT_DEPTH
+
         chats = cursor.get_chat_list()
         chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
         return self.serialize({
-            "chats": chats_with_user,
+            "chats": [chat.serialize(depth) for chat in chats_with_user],
         })
 
     @connect_db
@@ -134,10 +137,10 @@ class Server:
             raise NotExistError
         if (user := cursor.get_user(body["user_id"])) not in chat.authors:
             raise NotExistError
+        depth = body.get("depth") or DEFAULT_DEPTH
 
-        history = chat.serialize(body.get("depth") or DEFAULT_DEPTH)
         return self.serialize({
-            "history": chat,
+            "history": chat.serialize(depth),
         })
 
     @connect_db

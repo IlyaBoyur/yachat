@@ -8,11 +8,10 @@ import asyncio
 from typing import ClassVar
 from functools import wraps
 
-from constants import ChatType
+from constants import ChatType, DEFAULT_DEPTH
 from errors import NotConnectedError
 
 
-DEFAULT_DEPTH = 20
 MAX_CONNECTIONS = 1
 
 
