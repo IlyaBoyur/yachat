@@ -31,7 +31,8 @@ class Client:
 
     async def get_status(self):
         if self.uuid:
-            data = await self.send("GET /status")
+            body = json.dumps(dict(user_id=self.uuid))
+            data = await self.send(f"GET /status {body}")
             logger.info(f"Current status: {data}")
 
 
