@@ -40,7 +40,6 @@ async def test(create_storage):
     db, chats, *_ = await create_storage
     await dangler()
     chat, data = await reader()
-    print(data)
     assert data == json.dumps(db.chats[uuid.UUID(chat)].get_history(), indent=2, cls=DbEncoder)
 
 

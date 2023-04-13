@@ -44,12 +44,12 @@ class Server:
             return
         try:
             method, url, *body = message.split()
-            print(method, url, body, sep=" | ")
             json_body = json.loads("".join(body)) if body else dict()
+            logger.info(f"body: {json_body}")
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
         except (ValueError, KeyError, TypeError) as error:
             logger.exception(error)
-            return ""
+            return "fail"
         else:
             return result
 
@@ -68,8 +68,6 @@ class Server:
         pass
 
     async def add_message(self, body: dict):
-        logger.info(f"body: {body}")
-
         try:
             cursor = await self.database.connect()
             logger.info("Connected to db")
@@ -85,7 +83,6 @@ class Server:
         finally:
             cursor.disconnect()
             logger.info("Disconnected from db")
-
         return result
 
     async def client_connected_callback(self, reader: StreamReader, writer: StreamWriter):
