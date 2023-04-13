@@ -6,6 +6,7 @@ import json
 from json import JSONEncoder
 import asyncio
 from typing import ClassVar
+from functools import wraps
 
 from constants import ChatType
 from errors import NotConnectedError
@@ -123,56 +124,50 @@ class ChatStorageCursor:
     @staticmethod
     def check_connected(func):
         @wraps(func)
-        def inner(*args, **kwargs):
+        def inner(self, *args, **kwargs):
             if not self.db.check_connected(id(self)):
                 raise NotConnectedError
-            return func(*args, **kwargs)
+            return func(self, *args, **kwargs)
         return inner
-
+    
+    @check_connected
     def create_user(self) -> str:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
         while (new_user:= uuid.uuid4()) in self.db.users:
             pass
         self.db.users[new_user] = User(new_user)
         return str(new_user)
 
+    @check_connected
     def get_user(self, pk: str) -> User:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
         return self.db.users.get(uuid.UUID(pk), None)
 
+
+    @check_connected
     def get_default_chat_id(self) -> str:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
         if getattr(self.db, "default_chat_id", None) is None:
             self.db.default_chat_id = self.create_chat(name="default")
         return self.db.default_chat_id
 
+    @check_connected
     def create_chat(self, **kwargs) -> str:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
         kwargs.pop("id", None)
         while (new_chat_id:= uuid.uuid4()) in self.db.chats:
             pass
         self.db.chats[new_chat_id] = Chat(id=new_chat_id, **kwargs)
         return str(new_chat_id)
 
+    @check_connected
     def create_p2p_chat(self, **kwargs) -> str:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
         kwargs.pop("id", None)
         while (new_chat_id:= uuid.uuid4()) in self.db.chats:
             pass
         self.db.chats[new_chat_id] = PeerToPeerChat(id=new_chat_id, **kwargs)
         return str(new_chat_id)
 
+    @check_connected
     def get_chat(self, pk: str) -> Chat:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
         return self.db.chats.get(uuid.UUID(pk), None)
 
+    @check_connected
     def get_chat_list(self) -> list[Chat]:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
         return self.db.chats.values()
