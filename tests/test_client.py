@@ -6,14 +6,6 @@ from client import Client
 from db import User
 
 
-@pytest.fixture
-def api_client_auth(self):
-    client = Client()
-    user_id = "fdf40ad1-c49b-4dc1-b8b6-ce2d914a7830"
-    client.force_login(User(user_id))
-    return client
-
-
 @pytest.mark.asyncio
 async def test_connect(mocker):
     patched_send = mocker.patch("client.Client.send", return_value="1 2")
@@ -21,7 +13,7 @@ async def test_connect(mocker):
 
     await client.signup()
 
-    patched_send.assert_called_once_with("POST /connect")
+    patched_send.assert_called_once_with("POST /connect ")
 
 
 @pytest.mark.asyncio

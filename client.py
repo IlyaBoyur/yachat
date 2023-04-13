@@ -24,10 +24,12 @@ class Client:
         self.uuid = None
 
     async def get(self, url: str, *, data: dict=""):
-        return await self.send(f"GET {url} {json.dumps(data)}")
+        body = json.dumps(data) if data else ""
+        return await self.send(f"GET {url} {body}")
 
     async def post(self, url, *, data: dict=""):
-        return await self.send(f"POST {url} {json.dumps(data)}")
+        body = json.dumps(data) if data else ""
+        return await self.send(f"POST {url} {body}")
 
     async def signup(self):
         data = await self.post("/connect")
