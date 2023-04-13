@@ -98,8 +98,8 @@ class Server:
         chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
         return self.serialize({
             "time": cursor.now(),
-            "connections_max": cursor.db.max_connections,
-            "connections_now": len(cursor.db.connections),
+            "connections_db_max": cursor.db.max_connections,
+            "connections_db_now": len(cursor.db.connections),
             "chat_default": cursor.get_default_chat_id(),
             "chats_count": len(chats),
             "chats_with_user_count": len(chats_with_user),
