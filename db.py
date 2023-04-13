@@ -5,7 +5,7 @@ from collections import defaultdict
 import json
 from json import JSONEncoder
 import asyncio
-from typing import ClassVar
+from typing import ClassVar, Self
 from functools import wraps
 
 from constants import ChatType, DEFAULT_DEPTH
@@ -41,6 +41,7 @@ class Message:
     created: datetime
     author: User
     text: str
+    is_comment_on: Self = None
 
 
 @dataclass

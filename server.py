@@ -205,8 +205,9 @@ class Server:
             raise NotExistError
         if self.msg_limit_enabled and self.check_msg_limit_exceeded(cursor, author, chat):
             raise MsgLimitExceededError
-        
-        new_message = Message(uuid.uuid4(), self.now(), author, text=message)
+        comment_on = body.get("comment_on")
+
+        new_message = Message(uuid.uuid4(), self.now(), author, text=message, is_comment_on=comment_on)
         chat.add_message(new_message)
         return self.serialize({"id": new_message.id})
 
