@@ -70,6 +70,7 @@ async def test_common_chat():
     response = await client.signup()
     response = await client.post_send(message="hello, world!")
     response = await client.post_send(message="hello, new world!")
+    response = await client.get_status()
 
 
 if __name__ == "__main__":
