@@ -129,13 +129,6 @@ class ChatStorageCursor:
             return func(*args, **kwargs)
         return inner
 
-    def get_default_chat_id(self) -> str:
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
-        if getattr(self.db, "default_chat_id", None) is None:
-            self.db.default_chat_id = self.create_chat(name="default")
-        return self.db.default_chat_id
-
     def create_user(self) -> str:
         if not self.db.check_connected(id(self)):
             raise NotConnectedError
@@ -146,6 +139,13 @@ class ChatStorageCursor:
 
     def get_user(self, id: str) -> User:
         return self.db.users.get(uuid.UUID(id), None)
+
+    def get_default_chat_id(self) -> str:
+        if not self.db.check_connected(id(self)):
+            raise NotConnectedError
+        if getattr(self.db, "default_chat_id", None) is None:
+            self.db.default_chat_id = self.create_chat(name="default")
+        return self.db.default_chat_id
 
     def create_chat(self, **kwargs) -> str:
         if not self.db.check_connected(id(self)):
@@ -169,4 +169,6 @@ class ChatStorageCursor:
         return self.db.chats.get(uuid.UUID(id), None)
 
     def get_chat_list(self) -> list[Chat]:
+        if not self.db.check_connected(id(self)):
+            raise NotConnectedError
         return self.db.chats.values()

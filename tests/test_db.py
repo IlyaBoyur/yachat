@@ -25,38 +25,30 @@ async def test(create_storage):
     db, chats, *_ = await create_storage
     await dangler()
     chat, data = await reader()
-    # assert data == json.dumps(db.chats[uuid.UUID(chat)].serialize(), indent=2, cls=DbEncoder)
     assert data == db.chats[uuid.UUID(chat)]
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
-async def test_read_not_connected(create_storage):
+async def test_user_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).get_chat(0)
+        ChatStorageCursor(db).create_user()
+    # with pytest.raises(NotConnectedError):
+    #     ChatStorageCursor(db).get_user(0)
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip
-async def test_write_not_connected(create_storage):
+async def test_chat_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).write_to_chat(0,0,"")
-
-
-@pytest.mark.asyncio
-@pytest.mark.skip
-async def test_leave_not_connected(create_storage):
-    db, *_ = await create_storage
+        ChatStorageCursor(db).get_default_chat_id()
     with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).leave_chat(0,0)
-
-
-@pytest.mark.asyncio
-@pytest.mark.skip
-async def test_enter_not_connected(create_storage):
-    db, *_ = await create_storage
+        ChatStorageCursor(db).create_chat()
     with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).enter_chat(0,0)
+        ChatStorageCursor(db).create_p2p_chat()
+    # with pytest.raises(NotConnectedError):
+    #     ChatStorageCursor(db).get_chat(0)
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).get_chat_list()
+        
 
