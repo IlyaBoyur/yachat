@@ -88,6 +88,10 @@ async def test_common_chat():
     response = await client.get_status()
     response = await client.get("/chats", data=dict(user_id=client.uuid))
 
+    client_other = ChatClient()
+    response = await client_other.signup()
+    response = await client_other.post("/connect_p2p", data=dict(user_id=client.uuid, other_user_id=client_other.uuid))
+    response = await client.get("/chats", data=dict(user_id=client.uuid))
 
 if __name__ == "__main__":
     logging.basicConfig(
