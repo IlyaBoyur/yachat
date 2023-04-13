@@ -74,7 +74,7 @@ class ChatClient(AsyncClient):
             data = await self.get("/status", data=body)
             logger.info(f"Current status: {data}")
 
-    async def post_send(self, *, chat_id: uuid.uuid4=None, message=None):
+    async def post_send(self, *, chat_id: uuid.UUID=None, message=None):
         if self.uuid:
             body = dict(author_id=self.uuid, chat_id=chat_id, message=message)
             data = await self.post("/send", data=body)

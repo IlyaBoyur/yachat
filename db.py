@@ -32,12 +32,12 @@ class DbEncoder(JSONEncoder):
 
 @dataclass(eq=True, frozen=True)
 class User:
-    id: uuid.uuid4
+    id: uuid.UUID
 
 
 @dataclass(eq=True, frozen=True)
 class Message:
-    id: uuid.uuid4
+    id: uuid.UUID
     created: datetime
     author: User
     text: str
@@ -45,7 +45,7 @@ class Message:
 
 @dataclass
 class Chat:
-    id: uuid.uuid4
+    id: uuid.UUID
     name: str
     type: ClassVar[ChatType] = ChatType.COMMON
     messages: set[Message] = field(default_factory=set)
