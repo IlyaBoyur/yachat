@@ -58,6 +58,10 @@ class Server:
             return result
         return inner
 
+    @staticmethod
+    def serialize(data: dict):
+        return json.dumps(data, indent=2, cls=DbEncoder)
+
     async def parse(self, message: str=""):
         if not message:
             return
@@ -85,14 +89,14 @@ class Server:
         user = cursor.get_user(body["user_id"])
         chats = cursor.get_chat_list()
         chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
-        return json.dumps({
+        return self.serialize({
             "time": cursor.now(),
             "connections_max": cursor.db.max_connections,
             "connections_now": len(cursor.db.connections),
             "chat_default": cursor.get_default_chat_id(),
             "chats_count": len(chats),
             "chats_with_user_count": len(chats_with_user),
-        }, cls=DbEncoder)
+        })
 
     @connect_db
     def add_message(self, cursor, body: dict):
