@@ -6,6 +6,7 @@ import sys
 import uuid
 from dataclasses import dataclass
 import json
+from functools import wraps
 
 from db import ChatStorage, DbEncoder
 
@@ -39,6 +40,24 @@ class Server:
             },
         }
 
+    @staticmethod
+    def connect_db(func):
+        @wraps(func)
+        async def inner(self, *args, **kwargs):
+            try:
+                cursor = await self.database.connect()
+                logger.info("Connected to db")
+
+                result = func(self, cursor, *args, **kwargs)
+
+            except Exception as e:
+                logger.exception(e)
+                result = {"fail": e}
+            finally:
+                cursor.disconnect()
+            return result
+        return inner
+
     async def parse(self, message: str=""):
         if not message:
             return
@@ -54,61 +73,34 @@ class Server:
         else:
             return result
 
-    async def register(self, body: dict):
-        try:
-            cursor = await self.database.connect()
-            peer = cursor.create_user()
-            logger.info(f"New peer: {peer}")
-            cursor.enter_chat(peer, cursor.get_default_chat_id())
-            result = f"Token: {peer}"
-        except Exception as e:
-            logger.exception(e)
-            result = "fail"
-        finally:
-            cursor.disconnect()
-        return result
+    @connect_db
+    def register(self, cursor, body: dict):
+        peer = cursor.create_user()
+        logger.info(f"New peer: {peer}")
+        cursor.enter_chat(peer, cursor.get_default_chat_id())
+        return f"Token: {peer}"
 
-    async def get_status(self, body: dict):
-        try:
-            cursor = await self.database.connect()
-            logger.info("Connected to db")
+    @connect_db
+    def get_status(self, cursor, body: dict):
+        user = cursor.get_user(body["user_id"])
+        chats = cursor.get_chat_list()
+        chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
+        return json.dumps({
+            "time": cursor.now(),
+            "connections_max": cursor.db.max_connections,
+            "connections_now": len(cursor.db.connections),
+            "chat_default": cursor.get_default_chat_id(),
+            "chats_count": len(chats),
+            "chats_with_user_count": len(chats_with_user),
+        }, cls=DbEncoder)
 
-            user = cursor.get_user(body["user_id"])
-            chats = cursor.get_chat_list()
-            chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
-            result = json.dumps({
-                "time": cursor.now(),
-                "connections_max": cursor.db.max_connections,
-                "connections_now": len(cursor.db.connections),
-                "chat_default": cursor.get_default_chat_id(),
-                "chats_count": len(chats),
-                "chats_with_user_count": len(chats_with_user),
-            }, cls=DbEncoder)
-        except Exception as e:
-            logger.exception(e)
-            result = "fail"
-        finally:
-            cursor.disconnect()
-            logger.info("Disconnected from db")
-        return result
-
-    async def add_message(self, body: dict):
-        try:
-            cursor = await self.database.connect()
-            logger.info("Connected to db")
-
-            author_id = body["author_id"]
-            chat_id = body["chat_id"] or cursor.get_default_chat_id()
-            message = body["message"]
-            cursor.write_to_chat(author_id, chat_id, message)
-            result = "success"
-        except Exception as e:
-            logger.exception(e)
-            result = "fail"
-        finally:
-            cursor.disconnect()
-            logger.info("Disconnected from db")
-        return result
+    @connect_db
+    def add_message(self, cursor, body: dict):
+        author_id = body["author_id"]
+        chat_id = body["chat_id"] or cursor.get_default_chat_id()
+        message = body["message"]
+        cursor.write_to_chat(author_id, chat_id, message)
+        return ""
 
     async def client_connected_callback(self, reader: StreamReader, writer: StreamWriter):
         addr = writer.get_extra_info('peername')
