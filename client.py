@@ -71,6 +71,7 @@ async def test_common_chat():
     response = await client.post_send(message="hello, world!")
     response = await client.post_send(message="hello, new world!")
     response = await client.get_status()
+    response = await client.send(f"GET /chats {json.dumps(dict(user_id=client.uuid))}")
 
 
 if __name__ == "__main__":
