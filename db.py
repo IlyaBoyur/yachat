@@ -16,6 +16,10 @@ class DbEncoder(JSONEncoder):
     def default(self, obj):
         if is_dataclass(obj):
             return asdict(obj)
+        if isinstance(obj, Chat):
+            return obj.get_history()
+        if isinstance(obj, set):
+            return list(obj)
         if isinstance(obj, (date, datetime,)):
             return obj.isoformat()
         if isinstance(obj, uuid.UUID):
