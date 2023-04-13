@@ -6,6 +6,9 @@ from collections import defaultdict
 import json
 from json import JSONEncoder
 import asyncio
+from typing import ClassVar
+
+from constants import ChatType
 
 
 DEFAULT_DEPTH = 20
@@ -44,6 +47,7 @@ class Message:
 class Chat:
     id: uuid.uuid4
     name: str
+    type: ClassVar[ChatType] = ChatType.COMMON
     messages: set[Message] = field(default_factory=set)
     authors: set[User] = field(default_factory=set)
     size: int = 0
@@ -78,6 +82,7 @@ class Chat:
 
 @dataclass
 class PeerToPeerChat(Chat):
+    type: ClassVar[ChatType] = ChatType.PRIVATE
     def enter(self, author: User):
         if len(self.authors) == 2:
             raise RuntimeError()
