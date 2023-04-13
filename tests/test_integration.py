@@ -202,4 +202,21 @@ async def test_default_chat_limit(client, client_other, server):
     assert len(response_json["chats"][0]["messages"]) == 20
 
 
+@pytest.mark.asyncio
+async def test_no_chat_limit(client, client_other, server):
+    """Default number chat limit can be omitted"""
+    client.port = server.port
+    await client.signup()
+    data_default = dict(author_id=client.uuid,
+                        chat_id=None,
+                        message="")
+    [await client.post("/send", data=data_default) for _ in range(25)]
 
+    # New client connected
+    client_other.port = server.port
+    await client_other.signup()
+    response = await client_other.get("/chats", data=dict(user_id=client_other.uuid, depth=100))
+    response_json = json.loads(response)
+
+    assert len(response_json["chats"]) == 1
+    assert len(response_json["chats"][0]["messages"]) == 25
