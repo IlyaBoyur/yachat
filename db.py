@@ -127,7 +127,8 @@ class ChatStorageCursor:
             raise NotConnectedError
         if (author := self.get_user(author_id)) is None:
             raise NotExistError
-        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+        # if (chat := self.db.chats.get(uuid.UUID(chat_id))) is None:
+        if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         self.db.chats[uuid.UUID(chat_id)].enter(uuid.UUID(author_id))
         # chat.enter(author)
@@ -137,7 +138,8 @@ class ChatStorageCursor:
             raise NotConnectedError
         if (author := self.get_user(author_id)) is None:
             raise NotExistError
-        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+        # if (chat := self.db.chats.get(uuid.UUID(chat_id))) is None:
+        if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         self.db.chats[uuid.UUID(chat_id)].leave(uuid.UUID(author_id))
         # chat.leave(author)
@@ -147,7 +149,8 @@ class ChatStorageCursor:
             raise NotConnectedError
         if (author := self.get_user(author_id)) is None:
             raise NotExistError
-        if (chat := self.db.chats.get( uuid.UUID(chat_id) )) is None:
+        # if (chat := self.db.chats.get(uuid.UUID(chat_id))) is None:
+        if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         
         self.db.chats[uuid.UUID(chat_id)].enter(uuid.UUID(author_id))
