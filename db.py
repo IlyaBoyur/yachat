@@ -156,7 +156,7 @@ class ChatStorageCursor:
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
         
-        self.db.chats[uuid.UUID(chat_id)].enter(uuid.UUID(author_id))
+        self.db.chats[uuid.UUID(chat_id)].enter(self.get_user(author_id))
         self.db.chats[uuid.UUID(chat_id)].add_message(Message(uuid.uuid4(), self.now(), uuid.UUID(author_id),text=message))
         # chat.enter(author)
         # chat.add_message(Message(uuid.uuid4(), self.now(), author, text=message))
