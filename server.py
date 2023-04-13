@@ -38,6 +38,9 @@ class Server:
             "/send": {
                 "POST": self.add_message
             },
+            "/chats": {
+                "GET": self.get_chats
+            },
         }
 
     @staticmethod
@@ -96,6 +99,15 @@ class Server:
             "chat_default": cursor.get_default_chat_id(),
             "chats_count": len(chats),
             "chats_with_user_count": len(chats_with_user),
+        })
+
+    @connect_db
+    def get_chats(self, cursor, body: dict):
+        user = cursor.get_user(body["user_id"])
+        chats = cursor.get_chat_list()
+        chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
+        return self.serialize({
+            "chats": chats_with_user,
         })
 
     @connect_db
