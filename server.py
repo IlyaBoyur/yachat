@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import json
 from functools import wraps
 
+from constants import ChatType
 from db import ChatStorage, DbEncoder
 
 
@@ -41,6 +42,9 @@ class Server:
             "/chats": {
                 "GET": self.get_chats
             },
+            "/connect_p2p": {
+                "POST": self.enter_p2p
+            },
         }
 
     @staticmethod
@@ -70,13 +74,13 @@ class Server:
             return
         try:
             method, url, *body = message.split()
-            print(method, url, body, sep="||")
+            print(method, url, body, sep=" || ")
             json_body = json.loads("".join(body)) if body else dict()
             logger.info(f"body: {json_body}")
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
         except (ValueError, KeyError, TypeError) as error:
             logger.exception(error)
-            return "fail"
+            result = {"fail": e}
         else:
             return result
 
@@ -111,12 +115,34 @@ class Server:
         })
 
     @connect_db
+    def enter_p2p(self, cursor, body: dict):
+        user = cursor.get_user(body["user_id"])
+        print(user)
+        other_user = cursor.get_user(body["other_user_id"])
+        print(other_user)
+
+        chats = list(
+            filter(
+                lambda obj: (obj.type==ChatType.PRIVATE) and (user in obj.authors) and (other_user in obj.authors),
+                cursor.get_chat_list()
+            )
+        )
+        print(chats)
+
+        if not chats:
+            p2p_chat = cursor.create_chat(name="p2p", authors={user, other_user}, size=2)
+        else:
+            p2p_chat = chats[0]
+        return self.serialize({"chat_id": p2p_chat})
+
+
+    @connect_db
     def add_message(self, cursor, body: dict):
         author_id = body["author_id"]
         chat_id = body["chat_id"] or cursor.get_default_chat_id()
         message = body["message"]
-        cursor.write_to_chat(author_id, chat_id, message)
-        return ""
+        new_message_id = cursor.write_to_chat(author_id, chat_id, message)
+        return self.serialize({"id": new_message_id})
 
     async def client_connected_callback(self, reader: StreamReader, writer: StreamWriter):
         addr = writer.get_extra_info('peername')
