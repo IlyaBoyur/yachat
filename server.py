@@ -73,14 +73,14 @@ class Server:
         if not message:
             return
         try:
-            method, url, *body = message.split()
+            method, url, body = message.split(" ", maxsplit=2)
             print(method, url, body, sep=" || ")
-            json_body = json.loads("".join(body)) if body else dict()
+            json_body = json.loads(body) if body else dict()
             logger.info(f"body: {json_body}")
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
         except (ValueError, KeyError, TypeError) as error:
             logger.exception(error)
-            result = {"fail": e}
+            result = {"fail": error}
         else:
             return result
 
