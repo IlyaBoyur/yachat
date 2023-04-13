@@ -133,16 +133,6 @@ class ChatStorageCursor:
             self.db.default_chat_id = self.create_chat(name="default")
         return self.db.default_chat_id
 
-    def enter_chat(self, author_id: str, chat_id: str):
-        if not self.db.check_connected(id(self)):
-            raise NotConnectedError
-        if (author := self.get_user(author_id)) is None:
-            raise NotExistError
-        if (chat := self.get_chat(chat_id)) is None:
-            raise NotExistError
-
-        chat.enter(author)
-
     def leave_chat(self, author_id: str, chat_id: str):
         if not self.db.check_connected(id(self)):
             raise NotConnectedError

@@ -94,7 +94,9 @@ class Server:
     def register(self, cursor, body: dict):
         peer = cursor.create_user()
         logger.info(f"New peer: {peer}")
-        cursor.enter_chat(peer, cursor.get_default_chat_id())
+        author = cursor.get_user(peer)
+        chat = cursor.get_chat(cursor.get_default_chat_id())
+        chat.enter(author)
         return self.serialize({"token": peer})
 
     @connect_db
@@ -137,9 +139,7 @@ class Server:
     @connect_db
     def enter_p2p(self, cursor, body: dict):
         user = cursor.get_user(body["user_id"])
-        print(user)
         other_user = cursor.get_user(body["other_user_id"])
-        print(other_user)
 
         chats = list(
             filter(
@@ -150,12 +150,13 @@ class Server:
         print(chats)
 
         if not chats:
-            p2p_chat = cursor.create_p2p_chat(name="p2p")
-            cursor.enter_chat(str(user.id), p2p_chat)
-            cursor.enter_chat(str(other_user.id), p2p_chat)
+            p2p_chat_id = cursor.create_p2p_chat(name="p2p")
+            p2p_chat = cursor.get_chat(p2p_chat_id)
+            p2p_chat.enter(user)
+            p2p_chat.enter(other_user)
         else:
             p2p_chat = chats[0]
-        return self.serialize({"chat_id": p2p_chat})
+        return self.serialize({"chat_id": p2p_chat_id})
 
 
     @connect_db

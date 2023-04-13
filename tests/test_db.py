@@ -53,6 +53,7 @@ async def test_leave_not_connected(create_storage):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_enter_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
