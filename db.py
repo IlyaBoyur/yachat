@@ -176,7 +176,7 @@ class ChatStorageCursor:
             raise NotConnectedError
         if (chat := self.get_chat(chat_id)) is None:
             raise NotExistError
-        # history = self.db.chats[chat_id].get_history(depth)
+
         history = chat.serialize(depth)
         return json.dumps(history, indent=2, cls=DbEncoder)
 
