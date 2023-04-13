@@ -2,14 +2,14 @@ import asyncio
 import pytest
 import json
 
-from client import Client
+from client import ChatClient
 from db import User
 
 
 @pytest.mark.asyncio
 async def test_connect(mocker):
-    patched_send = mocker.patch("client.Client.send", return_value="1 2")
-    client = Client()
+    patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
+    client = ChatClient()
 
     await client.signup()
 
@@ -18,8 +18,8 @@ async def test_connect(mocker):
 
 @pytest.mark.asyncio
 async def test_send(mocker):
-    patched_send = mocker.patch("client.Client.send", return_value="1 2")
-    client = Client()
+    patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
+    client = ChatClient()
     user_id = "fdf40ad1-c49b-4dc1-b8b6-ce2d914a7830"
     client.force_login(User(user_id))
 
@@ -31,8 +31,8 @@ async def test_send(mocker):
 
 @pytest.mark.asyncio
 async def test_get_status(mocker):
-    patched_send = mocker.patch("client.Client.send", return_value="1 2")
-    client = Client()
+    patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
+    client = ChatClient()
     user_id = "fdf40ad1-c49b-4dc1-b8b6-ce2d914a7830"
     client.force_login(User(user_id))
 

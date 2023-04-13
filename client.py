@@ -15,13 +15,16 @@ DEFAULT_LIMIT = 64000
 logger = logging.getLogger(__name__)
 
 
-class Client:
-    def __init__(self, server_host: str=DEFAULT_HOST,
-                 server_port: int=DEFAULT_PORT, limit: int=DEFAULT_LIMIT):
+class AsyncClient:
+    def __init__(
+        self,
+        server_host: str=DEFAULT_HOST,
+        server_port: int=DEFAULT_PORT,
+        limit: int=DEFAULT_LIMIT
+    ):
         self.host = server_host
         self.port = server_port
         self.limit = limit
-        self.uuid = None
 
     async def get(self, url: str, *, data: dict=""):
         body = json.dumps(data) if data else ""
@@ -30,26 +33,6 @@ class Client:
     async def post(self, url, *, data: dict=""):
         body = json.dumps(data) if data else ""
         return await self.send(f"POST {url} {body}")
-
-    async def signup(self):
-        data = await self.post("/connect")
-        _, uuid = data.split()
-        logger.info(f"My uuid: {uuid}")
-        self.uuid = uuid
-
-    async def get_status(self):
-        if self.uuid:
-            body = dict(user_id=self.uuid)
-            data = await self.get("/status", data=body)
-            logger.info(f"Current status: {data}")
-
-
-    async def post_send(self, *, chat_id: uuid.uuid4=None, message=None):
-        if self.uuid:
-            body = dict(author_id=self.uuid, chat_id=chat_id, message=message)
-            data = await self.post("/send", data=body)
-            logger.info(f"Result: {data}")
-
 
     async def send(self, message=""):
         reader, writer = await asyncio.open_connection(
@@ -69,12 +52,36 @@ class Client:
         await writer.wait_closed()
         return data
 
+
+class ChatClient(AsyncClient):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.uuid = None
+
     def force_login(self, user: User):
         self.uuid = user.id
 
+    async def signup(self):
+        data = await self.post("/connect")
+        _, uuid = data.split()
+        logger.info(f"My uuid: {uuid}")
+        self.uuid = uuid
+
+    async def get_status(self):
+        if self.uuid:
+            body = dict(user_id=self.uuid)
+            data = await self.get("/status", data=body)
+            logger.info(f"Current status: {data}")
+
+    async def post_send(self, *, chat_id: uuid.uuid4=None, message=None):
+        if self.uuid:
+            body = dict(author_id=self.uuid, chat_id=chat_id, message=message)
+            data = await self.post("/send", data=body)
+            logger.info(f"Result: {data}")
+
 
 async def test_common_chat():
-    client = Client()
+    client = ChatClient()
     response = await client.signup()
     response = await client.post_send(message="hello, world!")
     response = await client.post_send(message="hello, new world!")
@@ -89,7 +96,7 @@ if __name__ == "__main__":
         datefmt="%H:%M:%S",
     )
 
-    client = Client()
+    client = ChatClient()
     if len(sys.argv) > 1:
         asyncio.run(client.send(sys.argv[1]))
     else:
