@@ -231,7 +231,7 @@ POST /send
 ```
 
 
-### **POST /chats/exit body** - выйти из чата
+### **POST /chats/exit \<body>** - выйти из чата
 Тело запроса: 
 ```python
 {
