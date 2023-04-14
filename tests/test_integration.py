@@ -104,7 +104,7 @@ async def test_connect_p2p(client, client_other, server):
 
     chat_uuid = uuid.UUID(json.loads(response)["chat_id"])
     p2p_chat = server.database.chats[chat_uuid]
-    p2p_chat_authors = {str(user.id) for user in p2p_chat.authors}
+    p2p_chat_authors = {str(user) for user in p2p_chat.authors}
     assert client.uuid in p2p_chat_authors
     assert client_other.uuid in p2p_chat_authors
     assert p2p_chat.size == 2
@@ -126,7 +126,7 @@ async def test_send_message_p2p(create_p2p):
 
     msg_uuid = uuid.UUID(response_json["id"])
     p2p_chat = server.database.chats[uuid.UUID(chat_id)]
-    p2p_chat_authors = {str(user.id) for user in p2p_chat.authors}
+    p2p_chat_authors = {str(user) for user in p2p_chat.authors}
     assert client.uuid in p2p_chat_authors
     assert client_other.uuid in p2p_chat_authors
     assert p2p_chat.size == 2
@@ -164,7 +164,7 @@ async def test_get_chats(client, server):
     assert "name" in chat
     assert len(chat["messages"]) == 0
     assert len(chat["authors"]) == 1
-    assert chat["authors"][0]["id"] == client.uuid
+    assert client.uuid in chat["authors"]
 
 
 @pytest.mark.asyncio
@@ -180,10 +180,8 @@ async def test_get_chats_single(create_p2p):
     assert "name" in chat
     assert len(chat["messages"]) == 0
     assert len(chat["authors"]) == 2
-    authors = [author["id"] for author in chat["authors"]]
-    assert client.uuid in authors
-    assert client_other.uuid in authors
-
+    assert client.uuid in chat["authors"]
+    assert client_other.uuid in chat["authors"]
 
 @pytest.mark.asyncio
 async def test_sequence(create_p2p):

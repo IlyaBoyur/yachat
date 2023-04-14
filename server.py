@@ -136,7 +136,7 @@ class Server:
         if (user := cursor.get_user(body.get("user_id"))) is None:
             raise NotExistError
         chats = cursor.get_chat_list()
-        chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
+        chats_with_user = list(filter(lambda obj: user.id in obj.authors, chats))
         return self.serialize({
             "time": self.now(),
             "connections_db_max": cursor.db.max_connections,
@@ -155,7 +155,7 @@ class Server:
         depth = body.get("depth") or DEFAULT_DEPTH
 
         chats = cursor.get_chat_list()
-        chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
+        chats_with_user = list(filter(lambda obj: user.id in obj.authors, chats))
         return self.serialize({
             "chats": [chat.serialize(depth) for chat in chats_with_user],
         })
@@ -163,7 +163,7 @@ class Server:
     def get_chat(self, cursor, pk, body: dict):
         if (chat := cursor.get_chat(pk)) is None:
             raise NotExistError
-        if (user := cursor.get_user(body.get("user_id"))) not in chat.authors:
+        if (user := cursor.get_user(body.get("user_id"))) and user.id not in chat.authors:
             raise NotExistError
         depth = body.get("depth") or DEFAULT_DEPTH
 

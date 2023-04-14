@@ -30,7 +30,7 @@ class DbEncoder(JSONEncoder):
         return super().default(obj)
 
 
-@dataclass(eq=True, frozen=True)
+@dataclass
 class User:
     id: uuid.UUID
 
@@ -50,20 +50,20 @@ class Chat:
     name: str
     type: ClassVar[ChatType] = ChatType.COMMON
     messages: dict[Message] = field(default_factory=dict)
-    authors: set[User] = field(default_factory=set)
+    authors: set[uuid.UUID] = field(default_factory=set)
     size: int = 0
 
     def add_message(self, message: Message):
         self.messages[message.id] = message
 
     def enter(self, author: User):
-        if author not in self.authors:
-            self.authors.add(author)
+        if author.id not in self.authors:
+            self.authors.add(author.id)
             self.size += 1
 
     def leave(self, author: User):
-        if author in self.authors:
-            self.authors.discard(author)
+        if author.id in self.authors:
+            self.authors.discard(author.id)
             self.size -= 1
 
     def serialize(self, depth=DEFAULT_DEPTH):
@@ -96,15 +96,11 @@ class Complaint:
     id: uuid.UUID
     author: uuid.UUID
     created: datetime
-    reported_about: uuid.UUID
+    reported_user: uuid.UUID
+    reason: str
     reviewed: bool = False
 
 
-@dataclass
-class UserBan:
-    id: uuid.UUID
-    user: uuid.UUID
-    created: datetime
 
 
 class ChatStorage:
@@ -155,11 +151,12 @@ class ChatStorageCursor:
         )
     
     @check_connected
-    def create_complaint(self) -> str:
-        while (new_complaint:= uuid.uuid4()) in self.db.complaints:
+    def create_complaint(self, **kwargs) -> str:
+        kwargs.pop("id", None)
+        while (new_complaint_id:= uuid.uuid4()) in self.db.complaints:
             pass
-        self.db.complaints[new_complaint] = Complaint(new_complaint)
-        return str(new_complaint)
+        self.db.complaints[new_complaint_id] = Complaint(id=new_complaint_id, **kwargs)
+        return str(new_complaint_id)
 
     @check_connected
     def delete_complaint(self, pk: str) -> None:
@@ -219,15 +216,3 @@ class ChatStorageCursor:
         return self.first_non_none(
             chat.messages.get(uuid.UUID(pk)) for chat in self.db.chats.values()
         )
-    
-    @check_connected
-    def create_user_ban(self, **kwargs) -> str:
-        kwargs.pop("id", None)
-        while (new_ban_id:= uuid.uuid4()) in self.db.user_bans:
-            pass
-        self.db.user_bans[new_ban_id] = UserBan(id=new_ban_id, **kwargs)
-        return str(new_ban_id)
-
-    @check_connected
-    def delete_user_ban(self, pk: str) -> None:
-        self.db.user_bans.pop(pk, None)
