@@ -98,7 +98,8 @@ async def test_common_chat():
         "/chats", data=dict(user_id=client_other.uuid, chat_id=p2p_chat_id)
     )
     response = await client_other.post(
-        "/chats/exit", data=dict(user_id=client_other.uuid, chat_id=p2p_chat_id)
+        "/chats/exit",
+        data=dict(user_id=client_other.uuid, chat_id=p2p_chat_id),
     )
 
 

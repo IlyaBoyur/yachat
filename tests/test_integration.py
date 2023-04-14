@@ -344,9 +344,9 @@ async def test_report_user_twice(create_p2p):
     reporter, offender, _, chat_id = await create_p2p
 
     data = dict(
-            user_id=reporter.uuid,
-            reported_user_id=offender.uuid,
-            reason="Test reason",
+        user_id=reporter.uuid,
+        reported_user_id=offender.uuid,
+        reason="Test reason",
     )
     await reporter.post("/report_user", data=data)
     response = await reporter.post("/report_user", data=data)
@@ -354,15 +354,14 @@ async def test_report_user_twice(create_p2p):
 
     assert response_json == {"fail": "User already reported"}
 
+
 @pytest.mark.asyncio
 async def test_leave(create_p2p):
     """User can leave chat"""
     client, client_other, _, chat_id = await create_p2p
     data = dict(user_id=client_other.uuid, chat_id=chat_id)
 
-    response = await client_other.post(
-        "/chats/exit", data=data
-    )
+    response = await client_other.post("/chats/exit", data=data)
 
     response_json = json.loads(response)
     assert response_json == {}

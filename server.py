@@ -221,7 +221,6 @@ class Server:
         chat.leave(author)
         return self.serialize({})
 
-
     @connect_db()
     def add_message(self, cursor, body: dict):
         author_id = body.get("author_id")
