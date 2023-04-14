@@ -153,6 +153,9 @@ class ChatStorageCursor:
     def get_user(self, pk: str) -> User:
         return self.db.users.get(uuid.UUID(pk), None)
 
+    @check_connected
+    def get_user_list(self) -> list[User]:
+        return self.db.users.values()
 
     @check_connected
     def get_default_chat_id(self) -> str:
