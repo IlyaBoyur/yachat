@@ -219,7 +219,7 @@ class Server:
                 comment_on = None
                 logger.warning("Target to comment on is not found")
 
-        new_message = Message(uuid.uuid4(), self.now(), author, text=message, is_comment_on=comment_on)
+        new_message = Message(uuid.uuid4(), self.now(), author.id, text=message, is_comment_on=comment_on)
         chat.add_message(new_message)
         return self.serialize({"id": new_message.id})
 
