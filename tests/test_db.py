@@ -1,15 +1,13 @@
 import asyncio
-import pytest
 import uuid
 
-from db import DbEncoder, NotConnectedError, ChatStorageCursor
+import pytest
+
+from db import ChatStorageCursor, NotConnectedError
 
 
 @pytest.mark.asyncio
 async def test(create_storage):
-    import json
-
-    
     async def reader():
         cursor = await asyncio.create_task(db.connect())
         chat = cursor.get_default_chat_id()
@@ -50,5 +48,3 @@ async def test_chat_not_connected(create_storage):
     #     ChatStorageCursor(db).get_chat(0)
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).get_chat_list()
-        
-

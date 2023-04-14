@@ -1,16 +1,13 @@
-import uuid
-from dataclasses import dataclass, is_dataclass, asdict, field
-from datetime import datetime, date
-from collections import defaultdict
-import json
-from json import JSONEncoder
 import asyncio
-from typing import ClassVar, Iterable, Any
+import uuid
+from dataclasses import asdict, dataclass, field, is_dataclass
+from datetime import date, datetime
 from functools import wraps
+from json import JSONEncoder
+from typing import Any, ClassVar, Iterable
 
-from constants import ChatType, DEFAULT_DEPTH
+from constants import DEFAULT_DEPTH, ChatType
 from errors import NotConnectedError
-
 
 MAX_CONNECTIONS = 1
 
@@ -23,7 +20,13 @@ class DbEncoder(JSONEncoder):
             return obj.serialize()
         if is_dataclass(obj):
             return asdict(obj)
-        if isinstance(obj, (date, datetime,)):
+        if isinstance(
+            obj,
+            (
+                date,
+                datetime,
+            ),
+        ):
             return obj.isoformat()
         if isinstance(obj, uuid.UUID):
             return str(obj)
@@ -76,7 +79,7 @@ class Chat:
             messages=sorted(
                 self.messages.values(),
                 key=lambda obj: obj.created,
-                reverse=True
+                reverse=True,
             )[:depth],
             authors=self.authors,
             size=self.size,
@@ -87,11 +90,11 @@ class Chat:
 @dataclass
 class PeerToPeerChat(Chat):
     type: ClassVar[ChatType] = ChatType.PRIVATE
+
     def enter(self, *args, **kwargs):
         if len(self.authors) == 2:
             raise RuntimeError()
         super().enter(*args, **kwargs)
-
 
 
 @dataclass
@@ -102,8 +105,6 @@ class Complaint:
     reported_user: uuid.UUID
     reason: str
     reviewed: bool = False
-
-
 
 
 class ChatStorage:
@@ -125,18 +126,18 @@ class ChatStorage:
 
     def disconnect(self, connection: int):
         self.connections.discard(connection)
-    
+
     def check_connected(self, connection: int):
         return connection in self.connections
 
 
 class ChatStorageCursor:
-    def __init__(self, db: ChatStorage=None):
+    def __init__(self, db: ChatStorage = None):
         self.db = db
 
     def disconnect(self):
         self.db.disconnect(id(self))
-    
+
     @staticmethod
     def check_connected(func):
         @wraps(func)
@@ -144,21 +145,21 @@ class ChatStorageCursor:
             if not self.db.check_connected(id(self)):
                 raise NotConnectedError
             return func(self, *args, **kwargs)
+
         return inner
-    
+
     @staticmethod
     def first_non_none(sequence: Iterable[Any]):
-        return next(
-            (item for item in sequence if item is not None),
-            None
-        )
-    
+        return next((item for item in sequence if item is not None), None)
+
     @check_connected
     def create_complaint(self, **kwargs) -> str:
         kwargs.pop("id", None)
-        while (new_complaint_id:= uuid.uuid4()) in self.db.complaints:
+        while (new_complaint_id := uuid.uuid4()) in self.db.complaints:
             pass
-        self.db.complaints[new_complaint_id] = Complaint(id=new_complaint_id, **kwargs)
+        self.db.complaints[new_complaint_id] = Complaint(
+            id=new_complaint_id, **kwargs
+        )
         return str(new_complaint_id)
 
     @check_connected
@@ -171,7 +172,7 @@ class ChatStorageCursor:
 
     @check_connected
     def create_user(self) -> str:
-        while (new_user:= uuid.uuid4()) in self.db.users:
+        while (new_user := uuid.uuid4()) in self.db.users:
             pass
         self.db.users[new_user] = User(new_user)
         return str(new_user)
@@ -193,7 +194,7 @@ class ChatStorageCursor:
     @check_connected
     def create_chat(self, **kwargs) -> str:
         kwargs.pop("id", None)
-        while (new_chat_id:= uuid.uuid4()) in self.db.chats:
+        while (new_chat_id := uuid.uuid4()) in self.db.chats:
             pass
         self.db.chats[new_chat_id] = Chat(id=new_chat_id, **kwargs)
         return str(new_chat_id)
@@ -201,7 +202,7 @@ class ChatStorageCursor:
     @check_connected
     def create_p2p_chat(self, **kwargs) -> str:
         kwargs.pop("id", None)
-        while (new_chat_id:= uuid.uuid4()) in self.db.chats:
+        while (new_chat_id := uuid.uuid4()) in self.db.chats:
             pass
         self.db.chats[new_chat_id] = PeerToPeerChat(id=new_chat_id, **kwargs)
         return str(new_chat_id)

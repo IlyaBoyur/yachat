@@ -1,6 +1,6 @@
-import asyncio
-import pytest
 import json
+
+import pytest
 
 from client import ChatClient
 from db import User
@@ -8,7 +8,9 @@ from db import User
 
 @pytest.mark.asyncio
 async def test_connect(mocker):
-    patched_send = mocker.patch("client.ChatClient.send", return_value='{"token":0}')
+    patched_send = mocker.patch(
+        "client.ChatClient.send", return_value='{"token":0}'
+    )
     client = ChatClient()
 
     await client.signup()
@@ -26,8 +28,11 @@ async def test_send(mocker):
 
     await client.post_send(message=TEST_MESSAGE)
 
-    body = json.dumps(dict(author_id=TEST_USER, chat_id=None, message=TEST_MESSAGE))
+    body = json.dumps(
+        dict(author_id=TEST_USER, chat_id=None, message=TEST_MESSAGE)
+    )
     patched_send.assert_called_once_with(f"POST /send {body}")
+
 
 @pytest.mark.asyncio
 async def test_send_chat(mocker):
@@ -57,5 +62,3 @@ async def test_get_status(mocker):
 
     body = json.dumps(data)
     patched_send.assert_called_once_with(f"GET /status {body}")
-
-

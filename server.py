@@ -1,19 +1,30 @@
 import asyncio
-from asyncio import StreamReader, StreamWriter
-import signal
-import logging
-import sys
-import uuid
-from dataclasses import dataclass
 import json
-import pytz
+import logging
+import signal
+import uuid
+from asyncio import StreamReader, StreamWriter
+from datetime import datetime, timedelta
 from functools import wraps
-from datetime import datetime, date, timedelta
 
-from constants import ChatType, DEFAULT_DEPTH, DEFAULT_MSG_LIMIT, DEFAULT_MSG_LIMIT_PERIOD_HOURS, DEFAULT_MODERATION_CYCLE_SECS, DEFAULT_BAN_PERIOD_HOURS, DEFAULT_MAX_COMPLAINT_COUNT
-from db import ChatStorage, DbEncoder, Message, User, Chat
-from errors import NotExistError, MsgLimitExceededError, BannedError, ValidationError
+import pytz
 
+from constants import (
+    DEFAULT_BAN_PERIOD_HOURS,
+    DEFAULT_DEPTH,
+    DEFAULT_MAX_COMPLAINT_COUNT,
+    DEFAULT_MODERATION_CYCLE_SECS,
+    DEFAULT_MSG_LIMIT,
+    DEFAULT_MSG_LIMIT_PERIOD_HOURS,
+    ChatType,
+)
+from db import Chat, ChatStorage, DbEncoder, Message, User
+from errors import (
+    BannedError,
+    MsgLimitExceededError,
+    NotExistError,
+    ValidationError,
+)
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
@@ -29,11 +40,11 @@ logger = logging.getLogger(__name__)
 class Server:
     def __init__(
         self,
-        host: int=DEFAULT_HOST,
-        port: int=DEFAULT_PORT,
-        limit: int=DEFAULT_LIMIT,
-        msg_limit_enabled: bool=False,
-        moderation_cycle_secs: int=DEFAULT_MODERATION_CYCLE_SECS,
+        host: int = DEFAULT_HOST,
+        port: int = DEFAULT_PORT,
+        limit: int = DEFAULT_LIMIT,
+        msg_limit_enabled: bool = False,
+        moderation_cycle_secs: int = DEFAULT_MODERATION_CYCLE_SECS,
     ):
         self.host = host
         self.port = port
@@ -45,27 +56,13 @@ class Server:
     @property
     def URL_METHOD_ACTION_MAP(self):
         return {
-            "/connect": {
-                "POST": self.register
-            },
-            "/status": {
-                "GET": self.get_status
-            },
-            "/send": {
-                "POST": self.add_message
-            },
-            "/chats": {
-                "GET": self.get_chats
-            },
-            "/connect_p2p": {
-                "POST": self.enter_p2p
-            },
-            "/chats/exit": {
-                "POST": self.leave
-            },
-            "/report_user": {
-                "POST": self.report_user
-            }
+            "/connect": {"POST": self.register},
+            "/status": {"GET": self.get_status},
+            "/send": {"POST": self.add_message},
+            "/chats": {"GET": self.get_chats},
+            "/connect_p2p": {"POST": self.enter_p2p},
+            "/chats/exit": {"POST": self.leave},
+            "/report_user": {"POST": self.report_user},
         }
 
     @staticmethod
@@ -86,7 +83,9 @@ class Server:
                     cursor.disconnect()
                     logger.info(f"Disconnected {user} from db")
                 return result
+
             return inner
+
         return wrapper
 
     @staticmethod
@@ -97,7 +96,7 @@ class Server:
     def now():
         return pytz.timezone("Europe/Moscow").localize(datetime.now())
 
-    async def parse(self, message: str=""):
+    async def parse(self, message: str = ""):
         if not message:
             return
         try:
@@ -112,20 +111,19 @@ class Server:
             return result
 
     def check_msg_limit_exceeded(self, cursor, user: User, chat: Chat):
-        is_target_msg = (
-            lambda obj: (
-                obj.author == user.id
-                and obj.created > self.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
-            )
+        is_target_msg = lambda obj: (
+            obj.author == user.id
+            and obj.created
+            > self.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
         )
         target_is_default_chat = cursor.get_default_chat_id() == str(chat.id)
         msg_count_exceeds_limit = (
-            len(list(filter(is_target_msg, chat.messages.values()))) >= DEFAULT_MSG_LIMIT
+            len(list(filter(is_target_msg, chat.messages.values())))
+            >= DEFAULT_MSG_LIMIT
         )
         if target_is_default_chat and msg_count_exceeds_limit:
             return True
         return False
-
 
     @connect_db()
     def register(self, cursor, body: dict):
@@ -141,15 +139,19 @@ class Server:
         if (user := cursor.get_user(body.get("user_id"))) is None:
             raise NotExistError
         chats = cursor.get_chat_list()
-        chats_with_user = list(filter(lambda obj: user.id in obj.authors, chats))
-        return self.serialize({
-            "time": self.now(),
-            "connections_db_max": cursor.db.max_connections,
-            "connections_db_now": len(cursor.db.connections),
-            "chat_default": cursor.get_default_chat_id(),
-            "chats_count": len(chats),
-            "chats_with_user_count": len(chats_with_user),
-        })
+        chats_with_user = list(
+            filter(lambda obj: user.id in obj.authors, chats)
+        )
+        return self.serialize(
+            {
+                "time": self.now(),
+                "connections_db_max": cursor.db.max_connections,
+                "connections_db_now": len(cursor.db.connections),
+                "chat_default": cursor.get_default_chat_id(),
+                "chats_count": len(chats),
+                "chats_with_user_count": len(chats_with_user),
+            }
+        )
 
     @connect_db()
     def get_chats(self, cursor, body: dict):
@@ -160,21 +162,29 @@ class Server:
         depth = body.get("depth") or DEFAULT_DEPTH
 
         chats = cursor.get_chat_list()
-        chats_with_user = list(filter(lambda obj: user.id in obj.authors, chats))
-        return self.serialize({
-            "chats": [chat.serialize(depth) for chat in chats_with_user],
-        })
+        chats_with_user = list(
+            filter(lambda obj: user.id in obj.authors, chats)
+        )
+        return self.serialize(
+            {
+                "chats": [chat.serialize(depth) for chat in chats_with_user],
+            }
+        )
 
     def get_chat(self, cursor, pk, body: dict):
         if (chat := cursor.get_chat(pk)) is None:
             raise NotExistError
-        if (user := cursor.get_user(body.get("user_id"))) and user.id not in chat.authors:
+        if (
+            user := cursor.get_user(body.get("user_id"))
+        ) and user.id not in chat.authors:
             raise NotExistError
         depth = body.get("depth") or DEFAULT_DEPTH
 
-        return self.serialize({
-            "history": chat.serialize(depth),
-        })
+        return self.serialize(
+            {
+                "history": chat.serialize(depth),
+            }
+        )
 
     @connect_db()
     def enter_p2p(self, cursor, body: dict):
@@ -183,8 +193,10 @@ class Server:
 
         chats = list(
             filter(
-                lambda obj: (obj.type==ChatType.PRIVATE) and (user in obj.authors) and (other_user in obj.authors),
-                cursor.get_chat_list()
+                lambda obj: (obj.type == ChatType.PRIVATE)
+                and (user in obj.authors)
+                and (other_user in obj.authors),
+                cursor.get_chat_list(),
             )
         )
         if not chats:
@@ -217,16 +229,24 @@ class Server:
             raise NotExistError
         if (chat := cursor.get_chat(chat_id)) is None:
             raise NotExistError
-        if self.MSG_LIMIT_ENABLED and self.check_msg_limit_exceeded(cursor, author, chat):
+        if self.MSG_LIMIT_ENABLED and self.check_msg_limit_exceeded(
+            cursor, author, chat
+        ):
             raise MsgLimitExceededError
         comment_on = body.get("comment_on")
         if comment_on is not None and cursor.get_message(comment_on) is None:
-                comment_on = None
-                logger.warning("Target to comment on is not found")
+            comment_on = None
+            logger.warning("Target to comment on is not found")
         if author.is_banned:
             raise BannedError
 
-        new_message = Message(uuid.uuid4(), self.now(), author.id, text=message, is_comment_on=comment_on)
+        new_message = Message(
+            uuid.uuid4(),
+            self.now(),
+            author.id,
+            text=message,
+            is_comment_on=comment_on,
+        )
         chat.add_message(new_message)
         return self.serialize({"id": new_message.id})
 
@@ -242,19 +262,31 @@ class Server:
             raise NotExistError
         if not reason:
             raise ValidationError("Ban reason should be present")
-        if len([bid for bid in cursor.get_complaint_list() if bid.author==author.id and bid.reported_user==target.id]) > 0:
+        if (
+            len(
+                [
+                    bid
+                    for bid in cursor.get_complaint_list()
+                    if bid.author == author.id
+                    and bid.reported_user == target.id
+                ]
+            )
+            > 0
+        ):
             raise ValidationError("User already reported")
 
         complaint_id = cursor.create_complaint(
             author=author.id,
-            created=self.now(), 
-            reported_user=reported_user.id, 
-            reason=reason
+            created=self.now(),
+            reported_user=reported_user.id,
+            reason=reason,
         )
         return self.serialize({"id": complaint_id})
 
-    async def client_connected_callback(self, reader: StreamReader, writer: StreamWriter):
-        addr = writer.get_extra_info('peername')
+    async def client_connected_callback(
+        self, reader: StreamReader, writer: StreamWriter
+    ):
+        addr = writer.get_extra_info("peername")
         data = await reader.read(self.limit)
         message = data.decode()
         logger.debug(f"Received {message} from {addr}")
@@ -279,11 +311,14 @@ class Server:
         loop.add_signal_handler(signal.SIGINT, self.sigterm_handler)
 
         server = await asyncio.start_server(
-            self.client_connected_callback, self.host, self.port, limit=self.limit
+            self.client_connected_callback,
+            self.host,
+            self.port,
+            limit=self.limit,
         )
 
-        addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
-        logger.info(f'Serving on {addrs}')
+        addrs = ", ".join(str(sock.getsockname()) for sock in server.sockets)
+        logger.info(f"Serving on {addrs}")
 
         async with server:
             await server.serve_forever()
@@ -293,12 +328,11 @@ class Server:
             await self.check_reported_users()
             await self.check_unban()
             await asyncio.sleep(self.MODERATION_CYCLE_SECS)
-    
+
     @connect_db(user=MODERATOR)
     def check_reported_users(self, cursor):
         for bid in (
-            bid for bid in cursor.get_complaint_list()
-            if not bid.reviewed
+            bid for bid in cursor.get_complaint_list() if not bid.reviewed
         ):
             user = cursor.get_user(str(bid.reported_user))
             if user.reported_times + 1 == DEFAULT_MAX_COMPLAINT_COUNT:
@@ -313,16 +347,16 @@ class Server:
         for user in cursor.get_user_list():
             if (
                 user.is_banned
-                and user.banned_when + timedelta(hours=DEFAULT_BAN_PERIOD_HOURS) < self.now()
+                and user.banned_when
+                + timedelta(hours=DEFAULT_BAN_PERIOD_HOURS)
+                < self.now()
             ):
                 user.is_banned = False
                 user.banned_when = None
 
     async def startup(self):
         await asyncio.gather(
-            self.listen(),
-            self.moderator(),
-            return_exceptions=True
+            self.listen(), self.moderator(), return_exceptions=True
         )
 
 

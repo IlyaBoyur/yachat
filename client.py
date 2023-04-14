@@ -1,11 +1,10 @@
 import asyncio
+import json
 import logging
 import sys
 import uuid
-import json
 
 from db import User
-
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
@@ -18,19 +17,19 @@ logger = logging.getLogger(__name__)
 class AsyncClient:
     def __init__(
         self,
-        server_host: str=DEFAULT_HOST,
-        server_port: int=DEFAULT_PORT,
-        limit: int=DEFAULT_LIMIT
+        server_host: str = DEFAULT_HOST,
+        server_port: int = DEFAULT_PORT,
+        limit: int = DEFAULT_LIMIT,
     ):
         self.host = server_host
         self.port = server_port
         self.limit = limit
 
-    async def get(self, url: str, *, data: dict=""):
+    async def get(self, url: str, *, data: dict = ""):
         body = json.dumps(data) if data else ""
         return await self.send(f"GET {url} {body}")
 
-    async def post(self, url, *, data: dict=""):
+    async def post(self, url, *, data: dict = ""):
         body = json.dumps(data) if data else ""
         return await self.send(f"POST {url} {body}")
 
@@ -45,9 +44,9 @@ class AsyncClient:
 
         response = await reader.read(self.limit)
         data = response.decode()
-        logger.debug(f'Received: {data}')
+        logger.debug(f"Received: {data}")
 
-        logger.debug('Closing the connection')
+        logger.debug("Closing the connection")
         writer.close()
         await writer.wait_closed()
         return data
@@ -74,7 +73,7 @@ class ChatClient(AsyncClient):
             data = await self.get("/status", data=body)
             logger.info(f"Current status: {data}")
 
-    async def post_send(self, *, chat_id: uuid.UUID=None, message=None):
+    async def post_send(self, *, chat_id: uuid.UUID = None, message=None):
         if self.uuid:
             body = dict(author_id=self.uuid, chat_id=chat_id, message=message)
             data = await self.post("/send", data=body)
@@ -90,8 +89,14 @@ async def test_common_chat():
 
     client_other = ChatClient()
     response = await client_other.signup()
-    response = await client_other.post("/connect_p2p", data=dict(user_id=client.uuid, other_user_id=client_other.uuid))
-    response = await client_other.get("/chats", data=dict(user_id=client_other.uuid))
+    response = await client_other.post(
+        "/connect_p2p",
+        data=dict(user_id=client.uuid, other_user_id=client_other.uuid),
+    )
+    response = await client_other.get(
+        "/chats", data=dict(user_id=client_other.uuid)
+    )
+
 
 if __name__ == "__main__":
     logging.basicConfig(
