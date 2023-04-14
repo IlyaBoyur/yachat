@@ -20,3 +20,6 @@ class BannedError(RuntimeError):
     """You have been banned. Please try again later."""
     def __init__(self):
         super().__init__(self.__doc__)
+
+class ValidationError(RuntimeError):
+    pass
