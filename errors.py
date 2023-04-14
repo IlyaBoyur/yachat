@@ -14,3 +14,9 @@ class MsgLimitExceededError(RuntimeError):
     """Message limit is achieved. Please try again later."""
     def __init__(self):
         super().__init__(self.__doc__)
+
+
+class BannedError(RuntimeError):
+    """You have been banned. Please try again later."""
+    def __init__(self):
+        super().__init__(self.__doc__)
