@@ -336,3 +336,20 @@ async def test_report_user(server):
 
     _, chat = server.database.chats.popitem()
     assert len(chat.messages) == 0
+
+
+@pytest.mark.asyncio
+async def test_report_user(create_p2p):
+    """User cannot report the same person twice"""
+    reporter, offender, server, chat_id = await create_p2p
+
+    data = dict(
+            user_id=reporter.uuid,
+            reported_user_id=offender.uuid,
+            reason="Test reason",
+    )
+    await reporter.post("/report_user", data=data)
+    response = await reporter.post("/report_user", data=data)
+    response_json = json.loads(response)
+
+    assert response_json == {"fail": "User already reported"}

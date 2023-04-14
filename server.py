@@ -268,7 +268,7 @@ class Server:
                     bid
                     for bid in cursor.get_complaint_list()
                     if bid.author == author.id
-                    and bid.reported_user == target.id
+                    and bid.reported_user == reported_user.id
                 ]
             )
             > 0
