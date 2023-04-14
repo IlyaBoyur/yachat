@@ -190,12 +190,11 @@ class Server:
     def enter_p2p(self, cursor, body: dict):
         user = cursor.get_user(body.get("user_id"))
         other_user = cursor.get_user(body.get("other_user_id"))
-
         chats = list(
             filter(
                 lambda obj: (obj.type == ChatType.PRIVATE)
-                and (user in obj.authors)
-                and (other_user in obj.authors),
+                and (user.id in obj.authors)
+                and (other_user.id in obj.authors),
                 cursor.get_chat_list(),
             )
         )
