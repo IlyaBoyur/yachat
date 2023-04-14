@@ -10,14 +10,17 @@ import pytz
 from functools import wraps
 from datetime import datetime, date, timedelta
 
-from constants import ChatType, DEFAULT_DEPTH, DEFAULT_MSG_LIMIT, DEFAULT_MSG_LIMIT_PERIOD_HOURS
+from constants import ChatType, DEFAULT_DEPTH, DEFAULT_MSG_LIMIT, DEFAULT_MSG_LIMIT_PERIOD_HOURS, DEFAULT_MODERATION_CYCLE_SECS, DEFAULT_BAN_PERIOD_HOURS, DEFAULT_MAX_COMPLAINT_COUNT
 from db import ChatStorage, DbEncoder, Message, User, Chat
-from errors import NotExistError, MsgLimitExceededError
+from errors import NotExistError, MsgLimitExceededError, BannedError
 
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
 DEFAULT_LIMIT = 64000
+
+SERVER_NAME = "server"
+MODERATOR_NAME = "moderator"
 
 
 logger = logging.getLogger(__name__)
@@ -61,22 +64,25 @@ class Server:
         }
 
     @staticmethod
-    def connect_db(func):
-        @wraps(func)
-        async def inner(self, *args, **kwargs):
-            try:
-                cursor = await self.database.connect()
-                logger.info("Connected to db")
+    def connect_db(user: str=SERVER_NAME):
+        def wrapper(func):
+            @wraps(func)
+            async def inner(self, *args, **kwargs):
+                try:
+                    cursor = await self.database.connect()
+                    logger.info(f"Connected {user} to db")
 
-                result = func(self, cursor, *args, **kwargs)
+                    result = func(self, cursor, *args, **kwargs)
 
-            except Exception as exception:
-                logger.exception(exception)
-                result = self.serialize({"fail": str(exception)})
-            finally:
-                cursor.disconnect()
-            return result
-        return inner
+                except Exception as exception:
+                    logger.exception(exception)
+                    result = self.serialize({"fail": str(exception)})
+                finally:
+                    cursor.disconnect()
+                    logger.info(f"Disconnected {user} from db")
+                return result
+            return inner
+        return wrapper
 
     @staticmethod
     def serialize(data: dict):
