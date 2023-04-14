@@ -169,7 +169,7 @@ async def test_get_chats(client, server):
 
 @pytest.mark.asyncio
 async def test_get_chats_single(create_p2p):
-    client, client_other, server, chat_id = await create_p2p
+    client, client_other, _, chat_id = await create_p2p
 
     response = await client.get("/chats", data=dict(user_id=client.uuid, chat_id=chat_id))
     response_json = json.loads(response)

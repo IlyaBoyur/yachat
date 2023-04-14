@@ -24,7 +24,13 @@ logger = logging.getLogger(__name__)
 
 
 class Server:
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT, limit=DEFAULT_LIMIT, msg_limit_enabled=False):
+    def __init__(
+        self,
+        host=DEFAULT_HOST,
+        port=DEFAULT_PORT,
+        limit=DEFAULT_LIMIT,
+        msg_limit_enabled=False
+    ):
         self.host = host
         self.port = port
         self.limit = limit
@@ -85,7 +91,6 @@ class Server:
             return
         try:
             method, url, body = message.split(" ", maxsplit=2)
-            print(method, url, body, sep=" || ")
             json_body = json.loads(body) if body else dict()
             logger.info(f"body: {json_body}")
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
@@ -122,7 +127,8 @@ class Server:
 
     @connect_db
     def get_status(self, cursor, body: dict):
-        user = cursor.get_user(body["user_id"])
+        if (user := cursor.get_user(body.get("user_id"))) is None:
+            raise NotExistError
         chats = cursor.get_chat_list()
         chats_with_user = list(filter(lambda obj: user in obj.authors, chats))
         return self.serialize({
@@ -138,7 +144,7 @@ class Server:
     def get_chats(self, cursor, body: dict):
         if (chat_id := body.get("chat_id")) is not None:
             return self.get_chat(cursor, chat_id, body)
-        if (user := cursor.get_user(body["user_id"])) is None:
+        if (user := cursor.get_user(body.get("user_id"))) is None:
             raise NotExistError
         depth = body.get("depth") or DEFAULT_DEPTH
 
@@ -151,7 +157,7 @@ class Server:
     def get_chat(self, cursor, pk, body: dict):
         if (chat := cursor.get_chat(pk)) is None:
             raise NotExistError
-        if (user := cursor.get_user(body["user_id"])) not in chat.authors:
+        if (user := cursor.get_user(body.get("user_id"))) not in chat.authors:
             raise NotExistError
         depth = body.get("depth") or DEFAULT_DEPTH
 
@@ -161,8 +167,8 @@ class Server:
 
     @connect_db
     def enter_p2p(self, cursor, body: dict):
-        user = cursor.get_user(body["user_id"])
-        other_user = cursor.get_user(body["other_user_id"])
+        user = cursor.get_user(body.get("user_id"))
+        other_user = cursor.get_user(body.get("other_user_id"))
 
         chats = list(
             filter(
@@ -170,8 +176,6 @@ class Server:
                 cursor.get_chat_list()
             )
         )
-        print(chats)
-
         if not chats:
             p2p_chat_id = cursor.create_p2p_chat(name="p2p")
             p2p_chat = cursor.get_chat(p2p_chat_id)
