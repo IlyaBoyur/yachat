@@ -109,7 +109,7 @@ class Server:
     def check_msg_limit_exceeded(self, cursor, user: User, chat: Chat):
         is_target_msg = (
             lambda obj: (
-                obj.author.id == user.id
+                obj.author == user.id
                 and obj.created > self.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
             )
         )

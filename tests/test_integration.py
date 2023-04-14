@@ -88,7 +88,7 @@ async def test_send_message_default(client, server):
 
     assert response_json["id"] == str(message.id)
     assert TEST_MESSAGE == str(message.text)
-    assert client.uuid == str(message.author.id)
+    assert client.uuid == str(message.author)
 
 
 @pytest.mark.asyncio
