@@ -19,8 +19,8 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
 DEFAULT_LIMIT = 64000
 
-SERVER_NAME = "server"
-MODERATOR_NAME = "moderator"
+SERVER = "server"
+MODERATOR = "moderator"
 
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class Server:
         }
 
     @staticmethod
-    def connect_db(user: str=SERVER_NAME):
+    def connect_db(user: str = SERVER):
         def wrapper(func):
             @wraps(func)
             async def inner(self, *args, **kwargs):
