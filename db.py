@@ -98,9 +98,12 @@ class PeerToPeerChat(Chat):
 class ChatStorage:
     def __init__(self, max_connections=MAX_CONNECTIONS):
         self.connections = set()
+        self.max_connections = max_connections
+        # db
         self.chats = dict()
         self.users = dict()
-        self.max_connections = max_connections
+        self.user_bans = dict()
+        self.complaints = dict()
 
     async def connect(self):
         while len(self.connections) > self.max_connections:
