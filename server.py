@@ -122,7 +122,7 @@ class Server:
         return False
 
 
-    @connect_db
+    @connect_db()
     def register(self, cursor, body: dict):
         peer = cursor.create_user()
         logger.info(f"New peer: {peer}")
@@ -131,7 +131,7 @@ class Server:
         chat.enter(author)
         return self.serialize({"token": peer})
 
-    @connect_db
+    @connect_db()
     def get_status(self, cursor, body: dict):
         if (user := cursor.get_user(body.get("user_id"))) is None:
             raise NotExistError
@@ -146,7 +146,7 @@ class Server:
             "chats_with_user_count": len(chats_with_user),
         })
 
-    @connect_db
+    @connect_db()
     def get_chats(self, cursor, body: dict):
         if (chat_id := body.get("chat_id")) is not None:
             return self.get_chat(cursor, chat_id, body)
@@ -171,7 +171,7 @@ class Server:
             "history": chat.serialize(depth),
         })
 
-    @connect_db
+    @connect_db()
     def enter_p2p(self, cursor, body: dict):
         user = cursor.get_user(body.get("user_id"))
         other_user = cursor.get_user(body.get("other_user_id"))
@@ -191,7 +191,7 @@ class Server:
             p2p_chat = chats[0]
         return self.serialize({"chat_id": p2p_chat_id})
 
-    @connect_db
+    @connect_db()
     def leave(self, cursor, body: dict):
         user_id = body.get("user_id")
         chat_id = body.get("chat_id")
@@ -203,7 +203,7 @@ class Server:
 
         chat.leave(author)
 
-    @connect_db
+    @connect_db()
     def add_message(self, cursor, body: dict):
         author_id = body.get("author_id")
         chat_id = body.get("chat_id") or cursor.get_default_chat_id()
