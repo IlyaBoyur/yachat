@@ -39,7 +39,7 @@ class User:
 class Message:
     id: uuid.UUID
     created: datetime
-    author: User
+    author: uuid.UUID
     text: str
     is_comment_on: uuid.UUID = None
 
