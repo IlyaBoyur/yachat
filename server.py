@@ -219,6 +219,8 @@ class Server:
             raise NotExistError
 
         chat.leave(author)
+        return self.serialize({})
+
 
     @connect_db()
     def add_message(self, cursor, body: dict):
