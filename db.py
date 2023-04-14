@@ -93,6 +93,20 @@ class PeerToPeerChat(Chat):
 
 
 
+@dataclass
+class Complaint:
+    id: uuid.UUID
+    author: uuid.UUID
+    created: datetime
+    reported_about: uuid.UUID
+    reviewed: bool = False
+
+
+@dataclass
+class UserBan:
+    id: uuid.UUID
+    user: uuid.UUID
+    created: datetime
 
 
 class ChatStorage:
@@ -141,6 +155,21 @@ class ChatStorageCursor:
             (item for item in sequence if item is not None),
             None
         )
+    
+    @check_connected
+    def create_complaint(self) -> str:
+        while (new_complaint:= uuid.uuid4()) in self.db.complaints:
+            pass
+        self.db.complaints[new_complaint] = Complaint(new_complaint)
+        return str(new_complaint)
+
+    @check_connected
+    def delete_complaint(self, pk: str) -> None:
+        self.db.complaints.pop(pk, None)
+
+    @check_connected
+    def get_complaint_list(self) -> list[Complaint]:
+        return self.db.complaints.values()
 
     @check_connected
     def create_user(self) -> str:
@@ -192,3 +221,15 @@ class ChatStorageCursor:
         return self.first_non_none(
             chat.messages.get(uuid.UUID(pk)) for chat in self.db.chats.values()
         )
+    
+    @check_connected
+    def create_user_ban(self, **kwargs) -> str:
+        kwargs.pop("id", None)
+        while (new_ban_id:= uuid.uuid4()) in self.db.user_bans:
+            pass
+        self.db.user_bans[new_ban_id] = UserBan(id=new_ban_id, **kwargs)
+        return str(new_ban_id)
+
+    @check_connected
+    def delete_user_ban(self, pk: str) -> None:
+        self.db.user_bans.pop(pk, None)
