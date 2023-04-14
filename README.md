@@ -82,6 +82,14 @@ POST /send
 
 # Результаты работы
 ## Документация
+### Общее
+В случае ошибки клиент получит ответ:
+```python
+{
+    "fail": string # описание ошибки
+} 
+```
+
 ### **POST /connect** - зарегистрироваться на сервере
 
 Тело запроса: нет
@@ -111,6 +119,12 @@ POST /send
     "chat_default": string,      # UUID общего чата
     "chats_count": int,          # общее число чатов
     "chats_with_user_count": int,# число чатов с пользователем
+    "user": {
+      "id": string,                 # UUID пользователя
+      "banned_when": string | null, # когда забанен
+      "is_banned": bool,            # забанен ли
+      "reported_times": int         # сколько раз другие пожаловались
+    }
 }
 ```
 
@@ -156,17 +170,13 @@ POST /send
         {
           "id": "24bbf014-e093-43cc-b916-909751ebd558", # UUID сообщения
           "created": "2023-04-14T03:00:24.310715+03:00", # дата сообщения
-          "author": {
-            "id": "2053f062-901d-4ce2-b84d-b912c6cd9f0f" # UUID автора сообщения
-          },
+          "author": "2053f062-901d-4ce2-b84d-b912c6cd9f0f" # UUID автора сообщения
           "text": "", # текст сообщения
           "is_comment_on": null # комментируемое сообщение (если есть)
         }
       ],
       "authors": [
-        {
-          "id": "b36e255d-9f1a-4985-a2cb-718633cd1434" # UUID пользователя
-        }
+         "b36e255d-9f1a-4985-a2cb-718633cd1434" # UUID пользователя
       ],
       "size": 1 # число пользователей
     }
@@ -193,20 +203,14 @@ POST /send
       {
         "id": "bcb532af-2935-4021-b7b2-e707e9f136b4",
         "created": "2023-04-14T03:05:53.118786+03:00",
-        "author": {
-          "id": "5012e337-a747-4999-9e6d-8cfd53ef72de"
-        },
+        "author": "5012e337-a747-4999-9e6d-8cfd53ef72de",
         "text": "test",
         "is_comment_on": null
       }
     ],
     "authors": [
-      {
-        "id": "ca2fdba6-05f2-408d-8e7c-53017b2b2b4b"
-      },
-      {
-        "id": "5012e337-a747-4999-9e6d-8cfd53ef72de"
-      }
+      "ca2fdba6-05f2-408d-8e7c-53017b2b2b4b",
+      "5012e337-a747-4999-9e6d-8cfd53ef72de"
     ],
     "size": 2
   }
@@ -238,5 +242,24 @@ POST /send
     "user_id": string # UUID пользователя
     "chat_id": string # UUID существующего чата, который нужно покинуть
 
+}
+```
+Ответ: нет
+
+
+### **POST /report_user \<body>** - пожаловаться на пользователя
+Тело запроса: 
+```python
+{
+    "user_id": string          # UUID пользователя
+    "reported_user_id": string # UUID нарушителя
+    "reason": string           # причина жалобы
+
+}
+```
+Ответ:
+```python
+{
+  "id": string # UUID заявления
 }
 ```
