@@ -33,6 +33,9 @@ class DbEncoder(JSONEncoder):
 @dataclass
 class User:
     id: uuid.UUID
+    banned_when: datetime | None = None
+    is_banned: bool = False
+    reported_times: int = 0
 
 
 @dataclass(eq=True, frozen=True)

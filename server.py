@@ -12,7 +12,7 @@ from datetime import datetime, date, timedelta
 
 from constants import ChatType, DEFAULT_DEPTH, DEFAULT_MSG_LIMIT, DEFAULT_MSG_LIMIT_PERIOD_HOURS, DEFAULT_MODERATION_CYCLE_SECS, DEFAULT_BAN_PERIOD_HOURS, DEFAULT_MAX_COMPLAINT_COUNT
 from db import ChatStorage, DbEncoder, Message, User, Chat
-from errors import NotExistError, MsgLimitExceededError, BannedError
+from errors import NotExistError, MsgLimitExceededError, BannedError, ValidationError
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -29,16 +29,18 @@ logger = logging.getLogger(__name__)
 class Server:
     def __init__(
         self,
-        host=DEFAULT_HOST,
-        port=DEFAULT_PORT,
-        limit=DEFAULT_LIMIT,
-        msg_limit_enabled=False
+        host: int=DEFAULT_HOST,
+        port: int=DEFAULT_PORT,
+        limit: int=DEFAULT_LIMIT,
+        msg_limit_enabled: bool=False,
+        moderation_cycle_secs: int=DEFAULT_MODERATION_CYCLE_SECS,
     ):
         self.host = host
         self.port = port
         self.limit = limit
+        self.MSG_LIMIT_ENABLED = msg_limit_enabled
+        self.MODERATION_CYCLE_SECS = moderation_cycle_secs
         self.database = ChatStorage()
-        self.msg_limit_enabled = msg_limit_enabled
 
     @property
     def URL_METHOD_ACTION_MAP(self):
@@ -60,6 +62,9 @@ class Server:
             },
             "/chats/exit": {
                 "POST": self.leave
+            },
+            "/report_user": {
+                "POST": self.report_user
             }
         }
 
@@ -212,16 +217,41 @@ class Server:
             raise NotExistError
         if (chat := cursor.get_chat(chat_id)) is None:
             raise NotExistError
-        if self.msg_limit_enabled and self.check_msg_limit_exceeded(cursor, author, chat):
+        if self.MSG_LIMIT_ENABLED and self.check_msg_limit_exceeded(cursor, author, chat):
             raise MsgLimitExceededError
         comment_on = body.get("comment_on")
         if comment_on is not None and cursor.get_message(comment_on) is None:
                 comment_on = None
                 logger.warning("Target to comment on is not found")
+        if author.is_banned:
+            raise BannedError
 
         new_message = Message(uuid.uuid4(), self.now(), author.id, text=message, is_comment_on=comment_on)
         chat.add_message(new_message)
         return self.serialize({"id": new_message.id})
+
+    @connect_db()
+    def report_user(self, cursor, body: dict):
+        user_id = body.get("user_id")
+        reported_user_id = body.get("reported_user_id")
+        reason = body.get("reason")
+
+        if (author := cursor.get_user(user_id)) is None:
+            raise NotExistError
+        if (reported_user := cursor.get_user(reported_user_id)) is None:
+            raise NotExistError
+        if not reason:
+            raise ValidationError("Ban reason should be present")
+        if len([bid for bid in cursor.get_complaint_list() if bid.author==author.id and bid.reported_user==target.id]) > 0:
+            raise ValidationError("User already reported")
+
+        complaint_id = cursor.create_complaint(
+            author=author.id,
+            created=self.now(), 
+            reported_user=reported_user.id, 
+            reason=reason
+        )
+        return self.serialize({"id": complaint_id})
 
     async def client_connected_callback(self, reader: StreamReader, writer: StreamWriter):
         addr = writer.get_extra_info('peername')
