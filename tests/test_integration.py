@@ -339,7 +339,7 @@ async def test_report_user(server):
 
 
 @pytest.mark.asyncio
-async def test_report_user(create_p2p):
+async def test_report_user_twice(create_p2p):
     """User cannot report the same person twice"""
     reporter, offender, server, chat_id = await create_p2p
 
