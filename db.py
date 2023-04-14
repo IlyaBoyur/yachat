@@ -49,13 +49,11 @@ class Chat:
     id: uuid.UUID
     name: str
     type: ClassVar[ChatType] = ChatType.COMMON
-    # messages: set[Message] = field(default_factory=set)
     messages: dict[Message] = field(default_factory=dict)
     authors: set[User] = field(default_factory=set)
     size: int = 0
 
     def add_message(self, message: Message):
-        # self.messages.add(message)
         self.messages[message.id] = message
 
     def enter(self, author: User):
