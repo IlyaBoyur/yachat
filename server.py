@@ -288,6 +288,43 @@ class Server:
         async with server:
             await server.serve_forever()
 
+    async def moderator(self):
+        while True:
+            await self.check_reported_users()
+            await self.check_unban()
+            await asyncio.sleep(self.MODERATION_CYCLE_SECS)
+    
+    @connect_db(user=MODERATOR)
+    def check_reported_users(self, cursor):
+        for bid in (
+            bid for bid in cursor.get_complaint_list()
+            if not bid.reviewed
+        ):
+            user = cursor.get_user(str(bid.reported_user))
+            if user.reported_times + 1 == DEFAULT_MAX_COMPLAINT_COUNT:
+                user.is_banned = True
+                user.banned_when = self.now()
+            else:
+                user.reported_times += 1
+            bid.reviewed = True
+
+    @connect_db(user=MODERATOR)
+    def check_unban(self, cursor):
+        for user in cursor.get_user_list():
+            if (
+                user.is_banned
+                and user.banned_when + timedelta(hours=DEFAULT_BAN_PERIOD_HOURS) < self.now()
+            ):
+                user.is_banned = False
+                user.banned_when = None
+
+    async def startup(self):
+        await asyncio.gather(
+            self.listen(),
+            self.moderator(),
+            return_exceptions=True
+        )
+
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -297,4 +334,4 @@ if __name__ == "__main__":
     )
 
     server = Server()
-    asyncio.run(server.listen())
+    asyncio.run(server.startup())

@@ -6,12 +6,16 @@ import uuid
 from client import ChatClient
 from db import User
 from server import Server
+from constants import DEFAULT_MAX_COMPLAINT_COUNT
+
+
+TEST_MODERATION_CYCLE_SECS = 1
 
 
 @pytest.fixture
 def server(event_loop, unused_tcp_port):
-    server = Server(port=unused_tcp_port)
-    cancel_handle = asyncio.ensure_future(server.listen(), loop=event_loop)
+    server = Server(port=unused_tcp_port, moderation_cycle_secs=TEST_MODERATION_CYCLE_SECS)
+    cancel_handle = asyncio.ensure_future(server.startup(), loop=event_loop)
     event_loop.run_until_complete(asyncio.sleep(0.01))
 
     try:
@@ -23,7 +27,7 @@ def server(event_loop, unused_tcp_port):
 @pytest.fixture
 def server_msg_limit(event_loop, unused_tcp_port):
     server = Server(port=unused_tcp_port, msg_limit_enabled=True)
-    cancel_handle = asyncio.ensure_future(server.listen(), loop=event_loop)
+    cancel_handle = asyncio.ensure_future(server.startup(), loop=event_loop)
     event_loop.run_until_complete(asyncio.sleep(0.01))
 
     try:
@@ -291,3 +295,35 @@ async def test_comment_p2p(create_p2p):
     assert len(response_json["history"]["messages"]) == 2
     assert response_json["history"]["messages"][0]["id"] == last_id
     assert response_json["history"]["messages"][0]["is_comment_on"] == first_id
+
+
+@pytest.mark.asyncio
+async def test_report_user(server):
+    """Reported N times user is banned and cannot send messages"""
+    TEST_COMPLAINT_COUNT = DEFAULT_MAX_COMPLAINT_COUNT
+    reporters = [ChatClient(server_port=server.port) for _ in range(TEST_COMPLAINT_COUNT)]
+    [await reporter.signup() for reporter in reporters]
+    offender = ChatClient(server_port=server.port)
+    await offender.signup()
+
+    for reporter in reporters:
+        data = dict(user_id=reporter.uuid,
+                    reported_user_id=offender.uuid,
+                    reason="Test reason")
+        response = await reporter.post("/report_user", data=data)
+
+    await asyncio.sleep(TEST_MODERATION_CYCLE_SECS)
+
+    # Offender tries to send message
+    for _ in range(4):
+        data = dict(author_id=offender.uuid,
+                    chat_id=None,
+                    message="")
+        response = await offender.post("/send", data=data)
+        response_json = json.loads(response)
+        assert "fail" in response_json
+
+    _, chat = server.database.chats.popitem()
+    assert len(chat.messages) == 0
+
+    
