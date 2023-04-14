@@ -150,6 +150,7 @@ class Server:
                 "chat_default": cursor.get_default_chat_id(),
                 "chats_count": len(chats),
                 "chats_with_user_count": len(chats_with_user),
+                "user": user,
             }
         )
 
