@@ -93,8 +93,9 @@ async def test_common_chat():
         "/connect_p2p",
         data=dict(user_id=client.uuid, other_user_id=client_other.uuid),
     )
+    p2p_chat_id = json.loads(response)["chat_id"]
     response = await client_other.get(
-        "/chats", data=dict(user_id=client_other.uuid)
+        "/chats", data=dict(user_id=client_other.uuid, chat_id=p2p_chat_id)
     )
 
 
