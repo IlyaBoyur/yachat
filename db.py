@@ -14,7 +14,7 @@ from settings import DEFAULT_MAX_CONNECTIONS
 
 
 class DbEncoder(JSONEncoder):
-    def default(self, obj):
+    def default(self, obj: Any) -> Any:
         if isinstance(obj, set):
             return list(obj)
         elif getattr(obj, "serialize", None):
@@ -42,7 +42,7 @@ class Message:
     created: datetime
     author: uuid.UUID
     text: str
-    is_comment_on: uuid.UUID = None
+    is_comment_on: uuid.UUID | None = None
 
 
 @dataclass
@@ -54,21 +54,21 @@ class Chat:
     authors: set[uuid.UUID] = field(default_factory=set)
 
     @property
-    def size(self):
+    def size(self) -> int:
         return len(self.authors)
 
-    def add_message(self, message: Message):
+    def add_message(self, message: Message) -> None:
         self.messages[message.id] = message
 
-    def enter(self, author: User):
+    def enter(self, author: User) -> None:
         if author.id not in self.authors:
             self.authors.add(author.id)
 
-    def leave(self, author: User):
+    def leave(self, author: User) -> None:
         if author.id in self.authors:
             self.authors.remove(author.id)
 
-    def serialize(self, count=DEFAULT_MSG_COUNT):
+    def serialize(self, count: int=DEFAULT_MSG_COUNT) -> dict:
         obj = dict(
             id=self.id,
             name=self.name,
@@ -87,7 +87,7 @@ class Chat:
 class PeerToPeerChat(Chat):
     type: ClassVar[ChatType] = ChatType.PRIVATE
 
-    def enter(self, *args, **kwargs):
+    def enter(self, *args, **kwargs) -> None:
         if len(self.authors) == 2:
             raise RuntimeError()
         super().enter(*args, **kwargs)
@@ -104,7 +104,7 @@ class Complaint:
 
 
 class ChatStorage:
-    def __init__(self, max_connections=DEFAULT_MAX_CONNECTIONS):
+    def __init__(self, max_connections=DEFAULT_MAX_CONNECTIONS) -> None:
         self.connections = set()
         self.max_connections = max_connections
         # db
@@ -113,25 +113,25 @@ class ChatStorage:
         self.user_bans = dict()
         self.complaints = dict()
 
-    async def connect(self):
+    async def connect(self) -> "ChatStorageCursor":
         while len(self.connections) > self.max_connections:
             await asyncio.sleep(0)
         connection = ChatStorageCursor(self)
         self.connections.add(id(connection))
         return connection
 
-    def disconnect(self, connection: int):
+    def disconnect(self, connection: int) -> None:
         self.connections.discard(connection)
 
-    def check_connected(self, connection: int):
+    def check_connected(self, connection: int) -> bool:
         return connection in self.connections
 
 
 class ChatStorageCursor:
-    def __init__(self, db: ChatStorage = None):
+    def __init__(self, db: ChatStorage = None) -> None:
         self.db = db
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         self.db.disconnect(id(self))
 
     @staticmethod
@@ -145,7 +145,7 @@ class ChatStorageCursor:
         return inner
 
     @staticmethod
-    def first_non_none(sequence: Iterable[Any]):
+    def first_non_none(sequence: Iterable[Any]) -> Any:
         return next((item for item in sequence if item is not None), None)
 
     @check_connected
