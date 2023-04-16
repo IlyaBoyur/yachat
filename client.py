@@ -21,15 +21,15 @@ class AsyncClient:
         self.port = server_port
         self.limit = limit
 
-    async def get(self, url: str, *, data: dict = ""):
+    async def get(self, url: str, *, data: dict = "") -> str:
         body = json.dumps(data) if data else ""
         return await self.send(f"GET {url} {body}")
 
-    async def post(self, url, *, data: dict = ""):
+    async def post(self, url: str, *, data: dict = "") -> str:
         body = json.dumps(data) if data else ""
         return await self.send(f"POST {url} {body}")
 
-    async def send(self, message=""):
+    async def send(self, message: str = "") -> str:
         reader, writer = await asyncio.open_connection(
             self.host, self.port, limit=self.limit
         )
@@ -53,30 +53,32 @@ class ChatClient(AsyncClient):
         super().__init__(*args, **kwargs)
         self.uuid = None
 
-    def force_login(self, user: User):
+    def force_login(self, user: User) -> None:
         self.uuid = user.id
 
-    async def signup(self):
+    async def signup(self) -> None:
         response = await self.post("/connect")
         response_json = json.loads(response)
         uuid = response_json["token"]
         logger.info(f"My uuid: {uuid}")
         self.uuid = uuid
 
-    async def get_status(self):
+    async def get_status(self) -> None:
         if self.uuid:
             body = dict(user_id=self.uuid)
             data = await self.get("/status", data=body)
             logger.info(f"Current status: {data}")
 
-    async def post_send(self, *, chat_id: uuid.UUID = None, message=None):
+    async def post_send(
+        self, *, chat_id: uuid.UUID | None = None, message: str | None = None
+    ) -> None:
         if self.uuid:
             body = dict(author_id=self.uuid, chat_id=chat_id, message=message)
             data = await self.post("/send", data=body)
-            logger.info(f"Result: {data}")
+            logger.info(f"Server responsed: {data}")
 
 
-async def test_common_chat():
+async def test_common_chat() -> None:
     client = ChatClient()
     response = await client.signup()
     response = await client.post_send(message="hello, world!")

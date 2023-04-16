@@ -69,7 +69,7 @@ class Chat:
         if author.id in self.authors:
             self.authors.remove(author.id)
 
-    def serialize(self, count: int=DEFAULT_MSG_COUNT) -> dict:
+    def serialize(self, count: int = DEFAULT_MSG_COUNT) -> dict:
         obj = dict(
             id=self.id,
             name=self.name,
@@ -105,7 +105,7 @@ class Complaint:
 
 
 class ChatStorage:
-    def __init__(self, max_connections=DEFAULT_MAX_CONNECTIONS) -> None:
+    def __init__(self, max_connections: int = DEFAULT_MAX_CONNECTIONS) -> None:
         self.connections = set()
         self.max_connections = max_connections
         # db

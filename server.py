@@ -6,7 +6,7 @@ import uuid
 from asyncio import StreamReader, StreamWriter
 from datetime import datetime, timedelta
 from functools import wraps
-
+from typing import Callable, Any
 from constants import ChatType
 from settings import (
     DEFAULT_BAN_PERIOD_HOURS,
@@ -16,7 +16,7 @@ from settings import (
     DEFAULT_MSG_LIMIT,
     DEFAULT_MSG_LIMIT_PERIOD_HOURS,
 )
-from db import Chat, ChatStorage, Message, User
+from db import Chat, ChatStorage, Message, User, ChatStorageCursor
 from errors import (
     BannedError,
     MsgLimitExceededError,
@@ -67,10 +67,10 @@ class Server:
         }
 
     @staticmethod
-    def connect_db(user: str = SERVER):
-        def wrapper(func):
+    def connect_db(user: str = SERVER) -> Callable:
+        def wrapper(func: Callable) -> Callable:
             @wraps(func)
-            async def inner(self, *args, **kwargs):
+            async def inner(self, *args, **kwargs) -> Any:
                 try:
                     cursor = await self.database.connect()
                     logger.info(f"Connected {user} to db")
@@ -89,11 +89,9 @@ class Server:
 
         return wrapper
 
-
-
-    async def parse(self, message: str = ""):
+    async def parse(self, message: str = "") -> str:
         if not message:
-            return
+            return ""
         try:
             method, url, body = message.split(" ", maxsplit=2)
             json_body = json.loads(body) if body else dict()
@@ -105,7 +103,9 @@ class Server:
         else:
             return result
 
-    def check_msg_limit_exceeded(self, cursor, user: User, chat: Chat):
+    def check_msg_limit_exceeded(
+        self, cursor: ChatStorageCursor, user: User, chat: Chat
+    ) -> bool:
         is_target_msg = lambda obj: (
             obj.author == user.id
             and obj.created
@@ -121,7 +121,7 @@ class Server:
         return False
 
     @connect_db()
-    def register(self, cursor, body: dict):
+    def register(self, cursor: ChatStorageCursor, body: dict) -> str:
         peer = cursor.create_user()
         logger.info(f"New peer: {peer}")
         author = cursor.get_user(peer)
@@ -130,7 +130,7 @@ class Server:
         return utils.serialize({"token": peer})
 
     @connect_db()
-    def get_status(self, cursor, body: dict):
+    def get_status(self, cursor: ChatStorageCursor, body: dict) -> str:
         if (user := cursor.get_user(body.get("user_id"))) is None:
             raise NotExistError
         chats = cursor.get_chat_list()
@@ -150,7 +150,7 @@ class Server:
         )
 
     @connect_db()
-    def get_chats(self, cursor, body: dict):
+    def get_chats(self, cursor: ChatStorageCursor, body: dict) -> str:
         if (chat_id := body.get("chat_id")) is not None:
             return self.get_chat(cursor, chat_id, body)
         if (user := cursor.get_user(body.get("user_id"))) is None:
@@ -169,7 +169,7 @@ class Server:
             }
         )
 
-    def get_chat(self, cursor, pk, body: dict):
+    def get_chat(self, cursor: ChatStorageCursor, pk: str, body: dict) -> str:
         if (chat := cursor.get_chat(pk)) is None:
             raise NotExistError
         if (
@@ -178,14 +178,10 @@ class Server:
             raise NotExistError
         msg_count = body.get("msg_count") or DEFAULT_MSG_COUNT
 
-        return utils.serialize(
-            {
-                "history": chat.serialize(msg_count),
-            }
-        )
+        return utils.serialize({"history": chat.serialize(msg_count)})
 
     @connect_db()
-    def enter_p2p(self, cursor, body: dict):
+    def enter_p2p(self, cursor: ChatStorageCursor, body: dict) -> str:
         user = cursor.get_user(body.get("user_id"))
         other_user = cursor.get_user(body.get("other_user_id"))
         chats = list(
@@ -206,7 +202,7 @@ class Server:
         return utils.serialize({"chat_id": p2p_chat_id})
 
     @connect_db()
-    def leave(self, cursor, body: dict):
+    def leave(self, cursor: ChatStorageCursor, body: dict) -> str:
         user_id = body.get("user_id")
         chat_id = body.get("chat_id")
 
@@ -219,7 +215,7 @@ class Server:
         return utils.serialize({})
 
     @connect_db()
-    def add_message(self, cursor, body: dict):
+    def add_message(self, cursor: ChatStorageCursor, body: dict) -> str:
         author_id = body.get("author_id")
         chat_id = body.get("chat_id") or cursor.get_default_chat_id()
         message = body.get("message")
@@ -249,7 +245,7 @@ class Server:
         return utils.serialize({"id": new_message.id})
 
     @connect_db()
-    def report_user(self, cursor, body: dict):
+    def report_user(self, cursor: ChatStorageCursor, body: dict) -> str:
         user_id = body.get("user_id")
         reported_user_id = body.get("reported_user_id")
         reason = body.get("reason")
@@ -268,7 +264,8 @@ class Server:
                     if bid.author == author.id
                     and bid.reported_user == reported_user.id
                 ]
-            ) > 0
+            )
+            > 0
         )
         if bid_already_exists:
             raise ValidationError("User already reported")
@@ -283,7 +280,7 @@ class Server:
 
     async def client_connected_callback(
         self, reader: StreamReader, writer: StreamWriter
-    ):
+    ) -> None:
         addr = writer.get_extra_info("peername")
         data = await reader.read(self.limit)
         message = data.decode()
@@ -299,12 +296,12 @@ class Server:
         writer.close()
         await writer.wait_closed()
 
-    def sigint_handler(self):
+    def sigint_handler(self) -> None:
         logger.warning("SIGINT called. Finishing")
         loop = asyncio.get_event_loop()
         loop.stop()
 
-    async def listen(self):
+    async def listen(self) -> None:
         loop = asyncio.get_event_loop()
         loop.add_signal_handler(signal.SIGINT, self.sigint_handler)
 
@@ -321,14 +318,14 @@ class Server:
         async with server:
             await server.serve_forever()
 
-    async def moderator(self):
+    async def moderator(self) -> None:
         while True:
             await self.check_reported_users()
             await self.check_unban()
             await asyncio.sleep(self.MODERATION_CYCLE_SECS)
 
     @connect_db(user=MODERATOR)
-    def check_reported_users(self, cursor):
+    def check_reported_users(self, cursor) -> None:
         for bid in cursor.get_complaint_list():
             if bid.reviewed:
                 continue
@@ -341,7 +338,7 @@ class Server:
             bid.reviewed = True
 
     @connect_db(user=MODERATOR)
-    def check_unban(self, cursor):
+    def check_unban(self, cursor) -> None:
         for user in cursor.get_user_list():
             if (
                 user.is_banned
@@ -352,7 +349,7 @@ class Server:
                 user.is_banned = False
                 user.banned_when = None
 
-    async def startup(self):
+    async def startup(self) -> None:
         await asyncio.gather(
             self.listen(), self.moderator(), return_exceptions=True
         )
