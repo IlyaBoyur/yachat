@@ -24,7 +24,6 @@ async def test_connect(mocker):
     patched_send.assert_called_once_with("POST /connect ")
 
 
-
 async def test_send(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()
@@ -38,7 +37,6 @@ async def test_send(mocker):
     patched_send.assert_called_once_with(f"POST /send {body}")
 
 
-
 async def test_send_chat(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()
@@ -49,7 +47,6 @@ async def test_send_chat(mocker):
 
     body = json.dumps(data)
     patched_send.assert_called_once_with(f"POST /send {body}")
-
 
 
 async def test_get_status(mocker):
