@@ -29,6 +29,8 @@ import utils
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
 DEFAULT_LIMIT = 64000
+ERROR_DEFAULT_SERVER = "Server Internal error"
+ERROR_NOT_SUPPORTED = "Method or url is not supported"
 
 SERVER = "server"
 MODERATOR = "moderator"
@@ -79,7 +81,7 @@ class Server:
 
                 except Exception as exception:
                     logger.exception("Error while running db operation")
-                    result = self.serialize({"fail": "Server Internal error"})
+                    raise
                 finally:
                     cursor.disconnect()
                     logger.info(f"Disconnected {user} from db")
@@ -104,12 +106,23 @@ class Server:
             return ""
         try:
             method, url, body = message.split(" ", maxsplit=2)
-            json_body = json.loads(body) if body else dict()
+            json_body = json.loads(body) if body else {}
             logger.info(f"body: {json_body}")
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
+        except (
+            ValidationError,
+            BannedError,
+            NotExistError,
+            MsgLimitExceededError,
+        ) as error:
+            logger.exception("Error caused by user actions")
+            return utils.serialize({"fail": str(error)})
         except (ValueError, KeyError, TypeError) as error:
-            logger.exception(error)
-            return utils.serialize({"fail": "Server Internal error"})
+            logger.exception(ERROR_NOT_SUPPORTED)
+            return utils.serialize({"fail": ERROR_NOT_SUPPORTED})
+        except Exception:
+            logger.exception("Error while running Server.parse")
+            return utils.serialize({"fail": DEFAULT_SERVER_ERROR})
         else:
             return result
 
