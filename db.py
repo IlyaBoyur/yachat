@@ -10,7 +10,7 @@ from constants import ChatType
 from settings import DEFAULT_MSG_COUNT
 from errors import NotConnectedError
 
-MAX_CONNECTIONS = 1
+from settings import DEFAULT_MAX_CONNECTIONS
 
 
 class DbEncoder(JSONEncoder):
@@ -104,7 +104,7 @@ class Complaint:
 
 
 class ChatStorage:
-    def __init__(self, max_connections=MAX_CONNECTIONS):
+    def __init__(self, max_connections=DEFAULT_MAX_CONNECTIONS):
         self.connections = set()
         self.max_connections = max_connections
         # db
