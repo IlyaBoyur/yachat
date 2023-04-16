@@ -9,6 +9,8 @@ from constants import DEFAULT_MAX_COMPLAINT_COUNT
 from server import Server
 
 TEST_MODERATION_CYCLE_SECS = 1
+TEST_MESSAGE = "test message "
+TEST_COMPLAINT_COUNT = DEFAULT_MAX_COMPLAINT_COUNT
 
 
 @pytest.fixture
@@ -77,13 +79,11 @@ async def test_send_message_default(client, server):
     client.port = server.port
     await client.signup()
 
-    TEST_MESSAGE = "test message "
     data = dict(
         author_id=client.uuid,
         chat_id=None,
         message=TEST_MESSAGE,
     )
-
     response = await client.post("/send", data=data)
     response_json = json.loads(response)
 
@@ -121,7 +121,6 @@ async def test_connect_p2p(client, client_other, server):
 async def test_send_message_p2p(create_p2p):
     client, client_other, server, chat_id = await create_p2p
 
-    TEST_MESSAGE = "test_message"
     data = dict(
         author_id=client.uuid,
         chat_id=chat_id,
@@ -197,7 +196,6 @@ async def test_get_chats_single(create_p2p):
 @pytest.mark.asyncio
 async def test_sequence(create_p2p):
     client, client_other, server, chat_id = await create_p2p
-    TEST_MESSAGE = "test_message"
     data_default = dict(
         author_id=client.uuid, chat_id=None, message=TEST_MESSAGE
     )
@@ -308,7 +306,6 @@ async def test_comment_p2p(create_p2p):
 @pytest.mark.asyncio
 async def test_report_user(server):
     """Reported N times user is banned and cannot send messages"""
-    TEST_COMPLAINT_COUNT = DEFAULT_MAX_COMPLAINT_COUNT
     reporters = [
         ChatClient(server_port=server.port)
         for _ in range(TEST_COMPLAINT_COUNT)

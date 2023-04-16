@@ -6,6 +6,11 @@ from client import ChatClient
 from db import User
 
 
+TEST_CHAT = "test_chat"
+TEST_MESSAGE = "test_message"
+TEST_USER = "test_user"
+
+
 @pytest.mark.asyncio
 async def test_connect(mocker):
     patched_send = mocker.patch(
@@ -22,8 +27,6 @@ async def test_connect(mocker):
 async def test_send(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()
-    TEST_USER = "test_user"
-    TEST_MESSAGE = "test_message"
     client.force_login(User(TEST_USER))
 
     await client.post_send(message=TEST_MESSAGE)
@@ -38,9 +41,6 @@ async def test_send(mocker):
 async def test_send_chat(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()
-    TEST_USER = "test_user"
-    TEST_CHAT = "test_chat"
-    TEST_MESSAGE = "test_message"
     client.force_login(User(TEST_USER))
     data = dict(author_id=TEST_USER, chat_id=TEST_CHAT, message=TEST_MESSAGE)
 
@@ -54,7 +54,6 @@ async def test_send_chat(mocker):
 async def test_get_status(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()
-    TEST_USER = "test_user"
     client.force_login(User(TEST_USER))
     data = dict(user_id=TEST_USER)
 
