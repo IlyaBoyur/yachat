@@ -11,7 +11,7 @@ from settings import DEFAULT_MAX_COMPLAINT_COUNT
 from .factories import ComplaintFactory
 
 TEST_MODERATION_CYCLE_SECS = 1
-TEST_MESSAGE = "test message "
+TEST_MESSAGE = " test $%v@@ message "
 TEST_COMPLAINT_COUNT = DEFAULT_MAX_COMPLAINT_COUNT
 
 
