@@ -20,11 +20,11 @@ class AsyncClient:
         self.port = server_port
         self.limit = limit
 
-    async def get(self, url: str, *, data: dict = "") -> str:
+    async def get(self, url: str, *, data: dict | None = None) -> str:
         body = json.dumps(data) if data else ""
         return await self.send(f"GET {url} {body}")
 
-    async def post(self, url: str, *, data: dict = "") -> str:
+    async def post(self, url: str, *, data: dict | None = None) -> str:
         body = json.dumps(data) if data else ""
         return await self.send(f"POST {url} {body}")
 
