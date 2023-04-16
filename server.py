@@ -122,7 +122,7 @@ class Server:
             return utils.serialize({"fail": ERROR_NOT_SUPPORTED})
         except Exception:
             logger.exception("Error while running Server.parse")
-            return utils.serialize({"fail": DEFAULT_SERVER_ERROR})
+            return utils.serialize({"fail": ERROR_DEFAULT_SERVER})
         else:
             return result
 
