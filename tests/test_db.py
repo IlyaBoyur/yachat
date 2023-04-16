@@ -32,7 +32,6 @@ async def test(create_storage):
     "db_compliant_method",
     [
         "create_complaint",
-        "delete_complaint",
         "get_complaint_list",
     ],
 )

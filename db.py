@@ -159,10 +159,6 @@ class ChatStorageCursor:
         return str(new_complaint_id)
 
     @check_connected
-    def delete_complaint(self, pk: str) -> None:
-        self.db.complaints.pop(pk, None)
-
-    @check_connected
     def get_complaint_list(self) -> list[Complaint]:
         return self.db.complaints.values()
 
