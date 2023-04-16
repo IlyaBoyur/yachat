@@ -89,7 +89,7 @@ class PeerToPeerChat(Chat):
 
     def enter(self, *args, **kwargs) -> None:
         if len(self.authors) == 2:
-            raise RuntimeError()
+            raise MaxMembersError
         super().enter(*args, **kwargs)
 
 

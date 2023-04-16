@@ -26,5 +26,12 @@ class BannedError(RuntimeError):
         super().__init__(self.__doc__)
 
 
+class MaxMembersError(RuntimeError):
+    """Max member count is exceeded."""
+
+    def __init__(self):
+        super().__init__(self.__doc__)
+
+
 class ValidationError(RuntimeError):
     pass
