@@ -8,9 +8,9 @@ from typing import Any, ClassVar, Iterable
 
 from constants import ChatType
 from settings import DEFAULT_MSG_COUNT
-from errors import NotConnectedError
+from errors import NotConnectedError, MaxMembersError
 
-from settings import DEFAULT_MAX_CONNECTIONS
+from settings import DEFAULT_MAX_CONNECTIONS, DEFAULT_DB_CONNECTION_WAIT_SECS
 
 
 class DbEncoder(JSONEncoder):
@@ -115,7 +115,7 @@ class ChatStorage:
 
     async def connect(self) -> "ChatStorageCursor":
         while len(self.connections) > self.max_connections:
-            await asyncio.sleep(0)
+            await asyncio.sleep(DEFAULT_DB_CONNECTION_WAIT_SECS)
         connection = ChatStorageCursor(self)
         self.connections.add(id(connection))
         return connection
