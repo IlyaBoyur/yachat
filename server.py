@@ -329,9 +329,9 @@ class Server:
 
     @connect_db(user=MODERATOR)
     def check_reported_users(self, cursor):
-        for bid in (
-            bid for bid in cursor.get_complaint_list() if not bid.reviewed
-        ):
+        for bid in cursor.get_complaint_list():
+            if bid.reviewed:
+                continue
             user = cursor.get_user(str(bid.reported_user))
             if user.reported_times + 1 == DEFAULT_MAX_COMPLAINT_COUNT:
                 user.is_banned = True
