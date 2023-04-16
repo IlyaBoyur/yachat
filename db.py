@@ -129,7 +129,7 @@ class ChatStorage:
 
 
 class ChatStorageCursor:
-    def __init__(self, db: ChatStorage = None) -> None:
+    def __init__(self, db: ChatStorage | None = None) -> None:
         self.db = db
 
     def disconnect(self) -> None:
@@ -152,8 +152,7 @@ class ChatStorageCursor:
     @check_connected
     def create_complaint(self, **kwargs) -> str:
         kwargs.pop("id", None)
-        while (new_complaint_id := uuid.uuid4()) in self.db.complaints:
-            pass
+        new_complaint_id = uuid.uuid4()
         self.db.complaints[new_complaint_id] = Complaint(
             id=new_complaint_id, **kwargs
         )
@@ -169,8 +168,7 @@ class ChatStorageCursor:
 
     @check_connected
     def create_user(self) -> str:
-        while (new_user := uuid.uuid4()) in self.db.users:
-            pass
+        new_user = uuid.uuid4()
         self.db.users[new_user] = User(new_user)
         return str(new_user)
 
@@ -191,16 +189,14 @@ class ChatStorageCursor:
     @check_connected
     def create_chat(self, **kwargs) -> str:
         kwargs.pop("id", None)
-        while (new_chat_id := uuid.uuid4()) in self.db.chats:
-            pass
+        new_chat_id = uuid.uuid4()
         self.db.chats[new_chat_id] = Chat(id=new_chat_id, **kwargs)
         return str(new_chat_id)
 
     @check_connected
     def create_p2p_chat(self, **kwargs) -> str:
         kwargs.pop("id", None)
-        while (new_chat_id := uuid.uuid4()) in self.db.chats:
-            pass
+        new_chat_id = uuid.uuid4()
         self.db.chats[new_chat_id] = PeerToPeerChat(id=new_chat_id, **kwargs)
         return str(new_chat_id)
 
