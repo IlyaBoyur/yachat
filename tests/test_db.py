@@ -8,7 +8,7 @@ from db import ChatStorageCursor, NotConnectedError
 pytestmark = pytest.mark.asyncio
 
 
-async def test(create_storage):
+async def test_db_works_asynchronously(create_storage):
     async def reader():
         cursor = await db.connect()
         chat = cursor.get_default_chat_id()

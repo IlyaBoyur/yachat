@@ -20,6 +20,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 def server(event_loop, unused_tcp_port):
+    """Fires up async server in pytest event loop"""
     server = Server(
         port=unused_tcp_port, moderation_cycle_secs=TEST_MODERATION_CYCLE_SECS
     )
@@ -32,6 +33,7 @@ def server(event_loop, unused_tcp_port):
 
 @pytest.fixture
 def server_msg_limit(event_loop, unused_tcp_port):
+    """Fires up parametrised async server in pytest event loop"""
     server = Server(port=unused_tcp_port, msg_limit_enabled=True)
     cancel_handle = asyncio.ensure_future(server.startup(), loop=event_loop)
     event_loop.run_until_complete(asyncio.sleep(0.01))
@@ -54,6 +56,7 @@ def client_other():
 
 @pytest.fixture
 async def create_p2p(client, client_other, server):
+    """Creates peer-to-peer (private) chat and clients"""
     client.port = server.port
     await client.signup()
     client_other.port = server.port
