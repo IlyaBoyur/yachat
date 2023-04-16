@@ -20,13 +20,7 @@ class DbEncoder(JSONEncoder):
             return obj.serialize()
         if is_dataclass(obj):
             return asdict(obj)
-        if isinstance(
-            obj,
-            (
-                date,
-                datetime,
-            ),
-        ):
+        if isinstance(obj, (date, datetime)):
             return obj.isoformat()
         if isinstance(obj, uuid.UUID):
             return str(obj)
@@ -57,7 +51,10 @@ class Chat:
     type: ClassVar[ChatType] = ChatType.COMMON
     messages: dict[Message] = field(default_factory=dict)
     authors: set[uuid.UUID] = field(default_factory=set)
-    size: int = 0
+
+    @property
+    def size(self):
+        return len(self.authors)
 
     def add_message(self, message: Message):
         self.messages[message.id] = message
@@ -65,12 +62,10 @@ class Chat:
     def enter(self, author: User):
         if author.id not in self.authors:
             self.authors.add(author.id)
-            self.size += 1
 
     def leave(self, author: User):
         if author.id in self.authors:
-            self.authors.discard(author.id)
-            self.size -= 1
+            self.authors.remove(author.id)
 
     def serialize(self, depth=DEFAULT_DEPTH):
         obj = dict(

@@ -5,29 +5,14 @@ from datetime import datetime, timedelta
 import pytest
 
 from db import ChatStorage, Message
+from .factories import MessageFactory, ChatFactory
 
 
 @pytest.mark.asyncio
 @pytest.fixture
 async def create_storage():
     db = ChatStorage(max_connections=1)
-    cursor = await asyncio.create_task(db.connect())
-
-    chats = [cursor.create_chat(name="") for _ in range(2)]
-    messages = [
-        Message(
-            msg_id,
-            datetime.now() - timedelta(days=msg_id),
-            uuid.uuid4(),
-            "",
-            None,
-        )
-        for msg_id in range(2)
-    ]
-    [
-        cursor.get_chat(chat).add_message(msg)
-        for chat in chats
-        for msg in messages
-    ]
-    cursor.disconnect()
+    messages = [MessageFactory() for _ in range(2)]
+    chats = [ChatFactory(name="", messages=messages) for _ in range(2)]
+    db.chats = {chat.id: chat for chat in chats}
     return db, chats, messages
