@@ -108,7 +108,7 @@ class Server:
             method, url, body = message.split(" ", maxsplit=2)
             json_body = json.loads(body) if body else {}
             logger.info(f"body: {json_body}")
-            result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
+            return await self.URL_METHOD_ACTION_MAP[url][method](json_body)
         except (
             ValidationError,
             BannedError,
@@ -123,8 +123,6 @@ class Server:
         except Exception:
             logger.exception("Error while running Server.parse")
             return utils.serialize({"fail": ERROR_DEFAULT_SERVER})
-        else:
-            return result
 
     def check_msg_limit_exceeded(
         self, cursor: ChatStorageCursor, user: User, chat: Chat
