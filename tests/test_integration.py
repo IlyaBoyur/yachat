@@ -331,6 +331,22 @@ async def test_report_user_twice(create_p2p):
     assert response_json == {"fail": "User already reported"}
 
 
+async def test_report_no_reason(create_p2p):
+    """User cannot report the same person twice"""
+    reporter, offender, _, chat_id = await create_p2p
+
+    data = dict(
+        user_id=reporter.uuid,
+        reported_user_id=offender.uuid,
+        reason=None,
+    )
+    await reporter.post("/report_user", data=data)
+    response = await reporter.post("/report_user", data=data)
+    response_json = json.loads(response)
+
+    assert response_json == {"fail": "Ban reason should be present"}
+
+
 async def test_leave(create_p2p):
     """User can leave chat"""
     client, client_other, _, chat_id = await create_p2p
