@@ -89,6 +89,16 @@ class Server:
 
         return wrapper
 
+    @staticmethod
+    def get_user_and_chat(
+        cursor: ChatStorageCursor, user_id: str, chat_id: str
+    ) -> tuple[User, Chat]:
+        if (chat := cursor.get_chat(chat_id)) is None:
+            raise NotExistError
+        if (user := cursor.get_user(user_id)) and user.id not in chat.authors:
+            raise NotExistError
+        return user, chat
+
     async def parse(self, message: str = "") -> str:
         if not message:
             return ""
@@ -170,14 +180,8 @@ class Server:
         )
 
     def get_chat(self, cursor: ChatStorageCursor, pk: str, body: dict) -> str:
-        if (chat := cursor.get_chat(pk)) is None:
-            raise NotExistError
-        if (
-            user := cursor.get_user(body.get("user_id"))
-        ) and user.id not in chat.authors:
-            raise NotExistError
+        _, chat = self.get_user_and_chat(cursor, body.get("user_id"), pk)
         msg_count = body.get("msg_count") or DEFAULT_MSG_COUNT
-
         return utils.serialize({"history": chat.serialize(msg_count)})
 
     @connect_db()
@@ -203,26 +207,21 @@ class Server:
 
     @connect_db()
     def leave(self, cursor: ChatStorageCursor, body: dict) -> str:
-        user_id = body.get("user_id")
-        chat_id = body.get("chat_id")
-
-        if (author := cursor.get_user(user_id)) is None:
-            raise NotExistError
-        if (chat := cursor.get_chat(chat_id)) is None:
-            raise NotExistError
-
+        author, chat = self.get_user_and_chat(
+            cursor, body.get("user_id"), body.get("chat_id")
+        )
         chat.leave(author)
         return utils.serialize({})
 
     @connect_db()
     def add_message(self, cursor: ChatStorageCursor, body: dict) -> str:
-        author_id = body.get("author_id")
-        chat_id = body.get("chat_id") or cursor.get_default_chat_id()
+        author, chat = self.get_user_and_chat(
+            cursor,
+            body.get("author_id"),
+            body.get("chat_id") or cursor.get_default_chat_id(),
+        )
         message = body.get("message")
-        if (author := cursor.get_user(author_id)) is None:
-            raise NotExistError
-        if (chat := cursor.get_chat(chat_id)) is None:
-            raise NotExistError
+
         if self.MSG_LIMIT_ENABLED and self.check_msg_limit_exceeded(
             cursor, author, chat
         ):
