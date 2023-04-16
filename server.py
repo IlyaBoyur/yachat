@@ -52,9 +52,10 @@ class Server:
         self.MSG_LIMIT_ENABLED = msg_limit_enabled
         self.MODERATION_CYCLE_SECS = moderation_cycle_secs
         self.database = ChatStorage()
+        # URL map
+        self.URL_METHOD_ACTION_MAP = self.create_url_method_action_map()
 
-    @property
-    def URL_METHOD_ACTION_MAP(self):
+    def create_url_method_action_map(self):
         return {
             "/connect": {"POST": self.register},
             "/status": {"GET": self.get_status},
