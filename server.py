@@ -29,7 +29,6 @@ from errors import (
 import utils
 
 
-
 ERROR_DEFAULT_SERVER = "Server Internal error"
 ERROR_NOT_SUPPORTED = "Method or url is not supported"
 
