@@ -5,6 +5,7 @@ from datetime import date, datetime
 from functools import wraps
 from json import JSONEncoder
 from typing import Any, ClassVar, Iterable
+import funcy
 
 from constants import ChatType
 from settings import DEFAULT_MSG_COUNT
@@ -146,7 +147,7 @@ class ChatStorageCursor:
 
     @staticmethod
     def first_non_none(sequence: Iterable[Any]) -> Any:
-        return next((item for item in sequence if item is not None), None)
+        return funcy.first(filter(funcy.notnone, sequence))
 
     @check_connected
     def create_complaint(self, **kwargs) -> str:
