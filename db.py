@@ -5,13 +5,16 @@ from datetime import date, datetime
 from functools import wraps
 from json import JSONEncoder
 from typing import Any, ClassVar, Iterable
+
 import funcy
 
 from constants import ChatType
-from settings import DEFAULT_MSG_COUNT
-from errors import NotConnectedError, MaxMembersError
-
-from settings import DEFAULT_MAX_CONNECTIONS, DEFAULT_DB_CONNECTION_WAIT_SECS
+from errors import MaxMembersError, NotConnectedError
+from settings import (
+    DEFAULT_DB_CONNECTION_WAIT_SECS,
+    DEFAULT_MAX_CONNECTIONS,
+    DEFAULT_MSG_COUNT,
+)
 
 
 class DbEncoder(JSONEncoder):

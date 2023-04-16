@@ -6,28 +6,28 @@ import uuid
 from asyncio import StreamReader, StreamWriter
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Callable, Any
+from typing import Any, Callable
+
+import utils
 from constants import ChatType
-from settings import (
-    DEFAULT_BAN_PERIOD_HOURS,
-    DEFAULT_MSG_COUNT,
-    DEFAULT_MAX_COMPLAINT_COUNT,
-    DEFAULT_MODERATION_CYCLE_SECS,
-    DEFAULT_MSG_LIMIT,
-    DEFAULT_MSG_LIMIT_PERIOD_HOURS,
-    DEFAULT_HOST,
-    DEFAULT_PORT,
-    DEFAULT_SERVER_BUFFER_LIMIT,
-)
-from db import Chat, ChatStorage, Message, User, ChatStorageCursor
+from db import Chat, ChatStorage, ChatStorageCursor, Message, User
 from errors import (
     BannedError,
     MsgLimitExceededError,
     NotExistError,
     ValidationError,
 )
-import utils
-
+from settings import (
+    DEFAULT_BAN_PERIOD_HOURS,
+    DEFAULT_HOST,
+    DEFAULT_MAX_COMPLAINT_COUNT,
+    DEFAULT_MODERATION_CYCLE_SECS,
+    DEFAULT_MSG_COUNT,
+    DEFAULT_MSG_LIMIT,
+    DEFAULT_MSG_LIMIT_PERIOD_HOURS,
+    DEFAULT_PORT,
+    DEFAULT_SERVER_BUFFER_LIMIT,
+)
 
 ERROR_DEFAULT_SERVER = "Server Internal error"
 ERROR_NOT_SUPPORTED = "Method or url is not supported"

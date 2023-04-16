@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 import pytest
 
 from db import ChatStorage, Message
-from .factories import MessageFactory, ChatFactory
+
+from .factories import ChatFactory, MessageFactory
 
 
 @pytest.mark.asyncio

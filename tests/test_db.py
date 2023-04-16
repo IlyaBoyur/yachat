@@ -5,7 +5,6 @@ import pytest
 
 from db import ChatStorageCursor, NotConnectedError
 
-
 pytestmark = pytest.mark.asyncio
 
 

@@ -5,7 +5,6 @@ import pytest
 from client import ChatClient
 from db import User
 
-
 TEST_CHAT = "test_chat"
 TEST_MESSAGE = "test_message"
 TEST_USER = "test_user"

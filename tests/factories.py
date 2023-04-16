@@ -1,8 +1,7 @@
 import factory.fuzzy
 
-
-from db import Message, Chat, Complaint
 from constants import ChatType
+from db import Chat, Complaint, Message
 
 
 class MessageFactory(factory.Factory):

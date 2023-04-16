@@ -5,11 +5,10 @@ import uuid
 import pytest
 
 from client import ChatClient
-from settings import DEFAULT_MAX_COMPLAINT_COUNT
 from server import Server
+from settings import DEFAULT_MAX_COMPLAINT_COUNT
 
 from .factories import ComplaintFactory
-
 
 TEST_MODERATION_CYCLE_SECS = 1
 TEST_MESSAGE = "test message "

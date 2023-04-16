@@ -6,7 +6,6 @@ import uuid
 
 from db import User
 
-
 logger = logging.getLogger(__name__)
 
 
