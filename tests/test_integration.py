@@ -8,9 +8,13 @@ from client import ChatClient
 from constants import DEFAULT_MAX_COMPLAINT_COUNT
 from server import Server
 
+
 TEST_MODERATION_CYCLE_SECS = 1
 TEST_MESSAGE = "test message "
 TEST_COMPLAINT_COUNT = DEFAULT_MAX_COMPLAINT_COUNT
+
+
+pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
@@ -64,7 +68,7 @@ async def create_p2p(client, client_other, server):
     return client, client_other, server, json.loads(response)["chat_id"]
 
 
-@pytest.mark.asyncio
+
 async def test_register(client, server):
     client.port = server.port
 
@@ -73,7 +77,7 @@ async def test_register(client, server):
     assert uuid.UUID(client.uuid) in server.database.users
 
 
-@pytest.mark.asyncio
+
 async def test_send_message_default(client, server):
     """Signed up user can send messages to default chat"""
     client.port = server.port
@@ -96,7 +100,7 @@ async def test_send_message_default(client, server):
     assert client.uuid == str(message.author)
 
 
-@pytest.mark.asyncio
+
 async def test_connect_p2p(client, client_other, server):
     client.port = server.port
     await client.signup()
@@ -117,7 +121,7 @@ async def test_connect_p2p(client, client_other, server):
     assert len(p2p_chat.messages) == 0
 
 
-@pytest.mark.asyncio
+
 async def test_send_message_p2p(create_p2p):
     client, client_other, server, chat_id = await create_p2p
 
@@ -139,7 +143,7 @@ async def test_send_message_p2p(create_p2p):
     assert msg_uuid in {msg.id for msg in p2p_chat.messages.values()}
 
 
-@pytest.mark.asyncio
+
 async def test_get_status(client, server):
     client.port = server.port
     await client.signup()
@@ -157,7 +161,7 @@ async def test_get_status(client, server):
     assert response_json["chats_with_user_count"] == 1
 
 
-@pytest.mark.asyncio
+
 async def test_get_chats(client, server):
     client.port = server.port
     await client.signup()
@@ -174,7 +178,7 @@ async def test_get_chats(client, server):
     assert client.uuid in chat["authors"]
 
 
-@pytest.mark.asyncio
+
 async def test_get_chats_single(create_p2p):
     client, client_other, _, chat_id = await create_p2p
 
@@ -193,7 +197,7 @@ async def test_get_chats_single(create_p2p):
     assert client_other.uuid in chat["authors"]
 
 
-@pytest.mark.asyncio
+
 async def test_sequence(create_p2p):
     client, client_other, server, chat_id = await create_p2p
     data_default = dict(
@@ -219,7 +223,7 @@ async def test_sequence(create_p2p):
     assert len(p2p["authors"]) == 2
 
 
-@pytest.mark.asyncio
+
 async def test_default_chat_limit(client, client_other, server):
     """Default number of available messages is 20"""
     client.port = server.port
@@ -239,7 +243,7 @@ async def test_default_chat_limit(client, client_other, server):
     assert len(response_json["chats"][0]["messages"]) == 20
 
 
-@pytest.mark.asyncio
+
 async def test_no_chat_limit(client, client_other, server):
     """Default number chat limit can be omitted"""
     client.port = server.port
@@ -259,7 +263,7 @@ async def test_no_chat_limit(client, client_other, server):
     assert len(response_json["chats"][0]["messages"]) == 25
 
 
-@pytest.mark.asyncio
+
 async def test_chat_limit_enabled(client, server_msg_limit):
     """No messages are sent if chat limit is exceeded"""
     client.port = server_msg_limit.port
@@ -276,7 +280,7 @@ async def test_chat_limit_enabled(client, server_msg_limit):
     assert len(response_json["chats"][0]["messages"]) == 20
 
 
-@pytest.mark.asyncio
+
 async def test_comment_p2p(create_p2p):
     """One can comment on other`s messages in p2p chat"""
     client, client_other, server, chat_id = await create_p2p
@@ -303,7 +307,7 @@ async def test_comment_p2p(create_p2p):
     assert response_json["history"]["messages"][0]["is_comment_on"] == first_id
 
 
-@pytest.mark.asyncio
+
 async def test_report_user(server):
     """Reported N times user is banned and cannot send messages"""
     reporters = [
@@ -335,7 +339,7 @@ async def test_report_user(server):
     assert len(chat.messages) == 0
 
 
-@pytest.mark.asyncio
+
 async def test_report_user_twice(create_p2p):
     """User cannot report the same person twice"""
     reporter, offender, _, chat_id = await create_p2p
@@ -352,7 +356,7 @@ async def test_report_user_twice(create_p2p):
     assert response_json == {"fail": "User already reported"}
 
 
-@pytest.mark.asyncio
+
 async def test_leave(create_p2p):
     """User can leave chat"""
     client, client_other, _, chat_id = await create_p2p

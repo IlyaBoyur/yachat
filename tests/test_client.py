@@ -10,8 +10,9 @@ TEST_CHAT = "test_chat"
 TEST_MESSAGE = "test_message"
 TEST_USER = "test_user"
 
+pytestmark = pytest.mark.asyncio
 
-@pytest.mark.asyncio
+
 async def test_connect(mocker):
     patched_send = mocker.patch(
         "client.ChatClient.send", return_value='{"token":0}'
@@ -23,7 +24,7 @@ async def test_connect(mocker):
     patched_send.assert_called_once_with("POST /connect ")
 
 
-@pytest.mark.asyncio
+
 async def test_send(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()
@@ -37,7 +38,7 @@ async def test_send(mocker):
     patched_send.assert_called_once_with(f"POST /send {body}")
 
 
-@pytest.mark.asyncio
+
 async def test_send_chat(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()
@@ -50,7 +51,7 @@ async def test_send_chat(mocker):
     patched_send.assert_called_once_with(f"POST /send {body}")
 
 
-@pytest.mark.asyncio
+
 async def test_get_status(mocker):
     patched_send = mocker.patch("client.ChatClient.send", return_value="1 2")
     client = ChatClient()

@@ -6,7 +6,9 @@ import pytest
 from db import ChatStorageCursor, NotConnectedError
 
 
-@pytest.mark.asyncio
+pytestmark = pytest.mark.asyncio
+
+
 async def test(create_storage):
     async def reader():
         cursor = await asyncio.create_task(db.connect())
@@ -26,7 +28,7 @@ async def test(create_storage):
     assert data == db.chats[uuid.UUID(chat)]
 
 
-@pytest.mark.asyncio
+
 async def test_user_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
@@ -35,7 +37,7 @@ async def test_user_not_connected(create_storage):
     #     ChatStorageCursor(db).get_user(0)
 
 
-@pytest.mark.asyncio
+
 async def test_chat_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
