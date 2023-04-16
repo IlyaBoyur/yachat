@@ -260,7 +260,7 @@ class Server:
             raise NotExistError
         if not reason:
             raise ValidationError("Ban reason should be present")
-        if (
+        bid_already_exists = (
             len(
                 [
                     bid
@@ -268,9 +268,9 @@ class Server:
                     if bid.author == author.id
                     and bid.reported_user == reported_user.id
                 ]
-            )
-            > 0
-        ):
+            ) > 0
+        )
+        if bid_already_exists:
             raise ValidationError("User already reported")
 
         complaint_id = cursor.create_complaint(
