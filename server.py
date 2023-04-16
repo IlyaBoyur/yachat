@@ -9,14 +9,14 @@ from functools import wraps
 
 import pytz
 
-from constants import (
+from constants import ChatType
+from settings import (
     DEFAULT_BAN_PERIOD_HOURS,
-    DEFAULT_DEPTH,
+    DEFAULT_MSG_COUNT,
     DEFAULT_MAX_COMPLAINT_COUNT,
     DEFAULT_MODERATION_CYCLE_SECS,
     DEFAULT_MSG_LIMIT,
     DEFAULT_MSG_LIMIT_PERIOD_HOURS,
-    ChatType,
 )
 from db import Chat, ChatStorage, DbEncoder, Message, User
 from errors import (
@@ -160,7 +160,7 @@ class Server:
             return self.get_chat(cursor, chat_id, body)
         if (user := cursor.get_user(body.get("user_id"))) is None:
             raise NotExistError
-        depth = body.get("depth") or DEFAULT_DEPTH
+        msg_count = body.get("msg_count") or DEFAULT_MSG_COUNT
 
         chats = cursor.get_chat_list()
         chats_with_user = list(
@@ -168,7 +168,7 @@ class Server:
         )
         return self.serialize(
             {
-                "chats": [chat.serialize(depth) for chat in chats_with_user],
+                "chats": [chat.serialize(msg_count) for chat in chats_with_user],
             }
         )
 
@@ -179,11 +179,11 @@ class Server:
             user := cursor.get_user(body.get("user_id"))
         ) and user.id not in chat.authors:
             raise NotExistError
-        depth = body.get("depth") or DEFAULT_DEPTH
+        msg_count = body.get("msg_count") or DEFAULT_MSG_COUNT
 
         return self.serialize(
             {
-                "history": chat.serialize(depth),
+                "history": chat.serialize(msg_count),
             }
         )
 

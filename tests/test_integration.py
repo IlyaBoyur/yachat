@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 from client import ChatClient
-from constants import DEFAULT_MAX_COMPLAINT_COUNT
+from settings import DEFAULT_MAX_COMPLAINT_COUNT
 from server import Server
 
 
@@ -239,7 +239,7 @@ async def test_no_chat_limit(client, client_other, server):
     client_other.port = server.port
     await client_other.signup()
     response = await client_other.get(
-        "/chats", data=dict(user_id=client_other.uuid, depth=100)
+        "/chats", data=dict(user_id=client_other.uuid, msg_count=100)
     )
     response_json = json.loads(response)
 

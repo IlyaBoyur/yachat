@@ -6,7 +6,8 @@ from functools import wraps
 from json import JSONEncoder
 from typing import Any, ClassVar, Iterable
 
-from constants import DEFAULT_DEPTH, ChatType
+from constants import ChatType
+from settings import DEFAULT_MSG_COUNT
 from errors import NotConnectedError
 
 MAX_CONNECTIONS = 1
@@ -67,7 +68,7 @@ class Chat:
         if author.id in self.authors:
             self.authors.remove(author.id)
 
-    def serialize(self, depth=DEFAULT_DEPTH):
+    def serialize(self, count=DEFAULT_MSG_COUNT):
         obj = dict(
             id=self.id,
             name=self.name,
@@ -75,7 +76,7 @@ class Chat:
                 self.messages.values(),
                 key=lambda obj: obj.created,
                 reverse=True,
-            )[:depth],
+            )[:count],
             authors=self.authors,
             size=self.size,
         )
