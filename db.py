@@ -166,9 +166,9 @@ class ChatStorageCursor:
 
     @check_connected
     def create_user(self) -> str:
-        new_user = uuid.uuid4()
-        self.db.users[new_user] = User(new_user)
-        return str(new_user)
+        new_user_id = uuid.uuid4()
+        self.db.users[new_user_id] = User(new_user_id)
+        return str(new_user_id)
 
     @check_connected
     def get_user(self, pk: str) -> User:
