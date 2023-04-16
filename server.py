@@ -137,9 +137,7 @@ class Server:
             len(list(filter(is_target_msg, chat.messages.values())))
             >= DEFAULT_MSG_LIMIT
         )
-        if target_is_default_chat and msg_count_exceeds_limit:
-            return True
-        return False
+        return bool(target_is_default_chat and msg_count_exceeds_limit)
 
     @connect_db()
     def register(self, cursor: ChatStorageCursor, body: dict) -> str:
