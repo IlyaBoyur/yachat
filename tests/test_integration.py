@@ -24,11 +24,8 @@ def server(event_loop, unused_tcp_port):
     )
     cancel_handle = asyncio.ensure_future(server.startup(), loop=event_loop)
     event_loop.run_until_complete(asyncio.sleep(0.01))
-
-    try:
-        yield server
-    finally:
-        cancel_handle.cancel()
+    yield server
+    cancel_handle.cancel()
 
 
 @pytest.fixture
@@ -36,11 +33,8 @@ def server_msg_limit(event_loop, unused_tcp_port):
     server = Server(port=unused_tcp_port, msg_limit_enabled=True)
     cancel_handle = asyncio.ensure_future(server.startup(), loop=event_loop)
     event_loop.run_until_complete(asyncio.sleep(0.01))
-
-    try:
-        yield server
-    finally:
-        cancel_handle.cancel()
+    yield server
+    cancel_handle.cancel()
 
 
 @pytest.fixture
