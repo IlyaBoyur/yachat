@@ -29,12 +29,26 @@ async def test(create_storage):
 
 
 
+async def test_compliant_not_connected(create_storage):
+    db, *_ = await create_storage
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).create_complaint()
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).delete_complaint(0)
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).get_complaint_list()
+
+
+
 async def test_user_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).create_user()
-    # with pytest.raises(NotConnectedError):
-    #     ChatStorageCursor(db).get_user(0)
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).get_user(0)
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).get_user_list()
+
 
 
 
@@ -46,7 +60,13 @@ async def test_chat_not_connected(create_storage):
         ChatStorageCursor(db).create_chat()
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).create_p2p_chat()
-    # with pytest.raises(NotConnectedError):
-    #     ChatStorageCursor(db).get_chat(0)
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).get_chat(0)
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).get_chat_list()
+
+
+async def test_chat_not_connected(create_storage):
+    db, *_ = await create_storage
+    with pytest.raises(NotConnectedError):
+        ChatStorageCursor(db).get_message()
