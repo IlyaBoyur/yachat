@@ -8,6 +8,8 @@ from client import ChatClient
 from settings import DEFAULT_MAX_COMPLAINT_COUNT
 from server import Server
 
+from .factories import ComplaintFactory
+
 
 TEST_MODERATION_CYCLE_SECS = 1
 TEST_MESSAGE = "test message "
@@ -291,30 +293,23 @@ async def test_comment_p2p(create_p2p):
 
 async def test_report_user(server):
     """Reported N times user is banned and cannot send messages"""
-    reporters = [
-        ChatClient(server_port=server.port)
-        for _ in range(TEST_COMPLAINT_COUNT)
-    ]
-    [await reporter.signup() for reporter in reporters]
     offender = ChatClient(server_port=server.port)
     await offender.signup()
 
-    for reporter in reporters:
-        data = dict(
-            user_id=reporter.uuid,
-            reported_user_id=offender.uuid,
-            reason="Test reason",
-        )
-        response = await reporter.post("/report_user", data=data)
-
+    server.database.complaints = {
+        obj.id: obj
+        for obj in [
+            ComplaintFactory(reported_user=offender.uuid)
+            for _ in range(TEST_COMPLAINT_COUNT)
+        ]
+    }
     await asyncio.sleep(TEST_MODERATION_CYCLE_SECS)
 
-    # Offender tries to send message
-    for _ in range(4):
-        data = dict(author_id=offender.uuid, chat_id=None, message="")
-        response = await offender.post("/send", data=data)
-        response_json = json.loads(response)
-        assert "fail" in response_json
+    # Offender cannot send message
+    data = dict(author_id=offender.uuid, chat_id=None, message="")
+    response = await offender.post("/send", data=data)
+    response_json = json.loads(response)
+    assert "fail" in response_json
 
     _, chat = server.database.chats.popitem()
     assert len(chat.messages) == 0

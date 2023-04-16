@@ -1,7 +1,7 @@
 import factory.fuzzy
 
 
-from db import Message, Chat
+from db import Message, Chat, Complaint
 from constants import ChatType
 
 
@@ -22,3 +22,15 @@ class ChatFactory(factory.Factory):
 
     class Meta:
         model = Chat
+
+
+class ComplaintFactory(factory.Factory):
+    id = factory.Faker("uuid4")
+    author = factory.Faker("uuid4")
+    created = factory.Faker("date_time")
+    reported_user = factory.Faker("uuid4")
+    reason = factory.Faker("word")
+    reviewed: bool = False
+
+    class Meta:
+        model = Complaint
