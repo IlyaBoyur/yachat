@@ -146,7 +146,7 @@ class ChatStorageCursor:
         return inner
 
     @staticmethod
-    def first_non_none(sequence: Iterable[Any]) -> Any:
+    def first_not_none(sequence: Iterable[Any]) -> Any:
         return funcy.first(filter(funcy.notnone, sequence))
 
     @check_connected
@@ -174,7 +174,7 @@ class ChatStorageCursor:
 
     @check_connected
     def get_user(self, pk: str) -> User:
-        return self.db.users.get(uuid.UUID(pk), None)
+        return self.db.users.get(uuid.UUID(pk))
 
     @check_connected
     def get_user_list(self) -> list[User]:
@@ -202,7 +202,7 @@ class ChatStorageCursor:
 
     @check_connected
     def get_chat(self, pk: str) -> Chat:
-        return self.db.chats.get(uuid.UUID(pk), None)
+        return self.db.chats.get(uuid.UUID(pk))
 
     @check_connected
     def get_chat_list(self) -> list[Chat]:
@@ -210,6 +210,6 @@ class ChatStorageCursor:
 
     @check_connected
     def get_message(self, pk: str) -> Message:
-        return self.first_non_none(
+        return self.first_not_none(
             chat.messages.get(uuid.UUID(pk)) for chat in self.db.chats.values()
         )
