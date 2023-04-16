@@ -15,6 +15,9 @@ from settings import (
     DEFAULT_MODERATION_CYCLE_SECS,
     DEFAULT_MSG_LIMIT,
     DEFAULT_MSG_LIMIT_PERIOD_HOURS,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    DEFAULT_SERVER_BUFFER_LIMIT,
 )
 from db import Chat, ChatStorage, Message, User, ChatStorageCursor
 from errors import (
@@ -26,9 +29,7 @@ from errors import (
 import utils
 
 
-DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 8001
-DEFAULT_LIMIT = 64000
+
 ERROR_DEFAULT_SERVER = "Server Internal error"
 ERROR_NOT_SUPPORTED = "Method or url is not supported"
 
@@ -44,7 +45,7 @@ class Server:
         self,
         host: int = DEFAULT_HOST,
         port: int = DEFAULT_PORT,
-        limit: int = DEFAULT_LIMIT,
+        limit: int = DEFAULT_SERVER_BUFFER_LIMIT,
         msg_limit_enabled: bool = False,
         moderation_cycle_secs: int = DEFAULT_MODERATION_CYCLE_SECS,
     ):
