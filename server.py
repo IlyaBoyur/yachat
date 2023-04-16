@@ -299,14 +299,14 @@ class Server:
         writer.close()
         await writer.wait_closed()
 
-    def sigterm_handler(self):
-        logger.warning("SIGTERM called. Finishing")
+    def sigint_handler(self):
+        logger.warning("SIGINT called. Finishing")
         loop = asyncio.get_event_loop()
         loop.stop()
 
     async def listen(self):
         loop = asyncio.get_event_loop()
-        loop.add_signal_handler(signal.SIGINT, self.sigterm_handler)
+        loop.add_signal_handler(signal.SIGINT, self.sigint_handler)
 
         server = await asyncio.start_server(
             self.client_connected_callback,
