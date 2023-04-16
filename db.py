@@ -112,10 +112,9 @@ class ChatStorage:
         self.connections = set()
         self.max_connections = max_connections
         # db
-        self.chats = dict()
-        self.users = dict()
-        self.user_bans = dict()
-        self.complaints = dict()
+        self.chats: dict[uuid.UUID, Chat] = {}
+        self.users: dict[uuid.UUID, User] = {}
+        self.complaints: dict[uuid.UUID, Complaint] = {}
 
     async def connect(self) -> "ChatStorageCursor":
         while len(self.connections) > self.max_connections:
