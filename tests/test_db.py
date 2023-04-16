@@ -11,14 +11,14 @@ pytestmark = pytest.mark.asyncio
 
 async def test(create_storage):
     async def reader():
-        cursor = await asyncio.create_task(db.connect())
+        cursor = await db.connect()
         chat = cursor.get_default_chat_id()
         data = cursor.get_chat(chat)
         cursor.disconnect()
         return chat, data
 
     async def dangler():
-        cursor = await asyncio.create_task(db.connect())
+        cursor = await db.connect()
         await asyncio.sleep(0.1)
         cursor.disconnect()
 
@@ -28,45 +28,57 @@ async def test(create_storage):
     assert data == db.chats[uuid.UUID(chat)]
 
 
-
-async def test_compliant_not_connected(create_storage):
+@pytest.mark.parametrize(
+    "db_compliant_method",
+    [
+        "create_complaint",
+        "delete_complaint",
+        "get_complaint_list",
+    ],
+)
+async def test_compliant_not_connected(create_storage, db_compliant_method):
     db, *_ = await create_storage
+    cursor = ChatStorageCursor(db)
+
     with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).create_complaint()
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).delete_complaint(0)
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).get_complaint_list()
+        getattr(cursor, db_compliant_method)()
 
 
-
-async def test_user_not_connected(create_storage):
+@pytest.mark.parametrize(
+    "db_user_method",
+    [
+        "create_user",
+        "get_user",
+        "get_user_list",
+    ],
+)
+async def test_user_not_connected(create_storage, db_user_method):
     db, *_ = await create_storage
+    cursor = ChatStorageCursor(db)
+
     with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).create_user()
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).get_user(0)
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).get_user_list()
+        getattr(cursor, db_user_method)()
 
 
-
-
-async def test_chat_not_connected(create_storage):
+@pytest.mark.parametrize(
+    "db_chat_method",
+    [
+        "get_default_chat_id",
+        "create_chat",
+        "create_p2p_chat",
+        "get_chat",
+        "get_chat_list",
+    ],
+)
+async def test_chat_not_connected(create_storage, db_chat_method):
     db, *_ = await create_storage
+    cursor = ChatStorageCursor(db)
+
     with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).get_default_chat_id()
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).create_chat()
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).create_p2p_chat()
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).get_chat(0)
-    with pytest.raises(NotConnectedError):
-        ChatStorageCursor(db).get_chat_list()
+        getattr(cursor, db_chat_method)()
 
 
-async def test_chat_not_connected(create_storage):
+async def test_message_not_connected(create_storage):
     db, *_ = await create_storage
     with pytest.raises(NotConnectedError):
         ChatStorageCursor(db).get_message()
