@@ -168,7 +168,9 @@ class Server:
         )
         return self.serialize(
             {
-                "chats": [chat.serialize(msg_count) for chat in chats_with_user],
+                "chats": [
+                    chat.serialize(msg_count) for chat in chats_with_user
+                ],
             }
         )
 
