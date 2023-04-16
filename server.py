@@ -212,7 +212,7 @@ class Server:
             p2p_chat.enter(other_user)
         else:
             p2p_chat = chats[0]
-        return utils.serialize({"chat_id": p2p_chat_id})
+        return utils.serialize({"chat_id": str(p2p_chat.id)})
 
     @connect_db()
     def leave(self, cursor: ChatStorageCursor, body: dict) -> str:
