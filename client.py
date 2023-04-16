@@ -6,10 +6,6 @@ import uuid
 
 from db import User
 
-DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 8001
-DEFAULT_LIMIT = 64000
-
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +13,9 @@ logger = logging.getLogger(__name__)
 class AsyncClient:
     def __init__(
         self,
-        server_host: str = DEFAULT_HOST,
-        server_port: int = DEFAULT_PORT,
-        limit: int = DEFAULT_LIMIT,
+        server_host: str = "127.0.0.1",
+        server_port: int = 8001,
+        limit: int = 64000,
     ):
         self.host = server_host
         self.port = server_port
