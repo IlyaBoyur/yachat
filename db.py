@@ -17,13 +17,13 @@ class DbEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, set):
             return list(obj)
-        if getattr(obj, "serialize", None):
+        elif getattr(obj, "serialize", None):
             return obj.serialize()
-        if is_dataclass(obj):
+        elif is_dataclass(obj):
             return asdict(obj)
-        if isinstance(obj, (date, datetime)):
+        elif isinstance(obj, (date, datetime)):
             return obj.isoformat()
-        if isinstance(obj, uuid.UUID):
+        elif isinstance(obj, uuid.UUID):
             return str(obj)
         return super().default(obj)
 
