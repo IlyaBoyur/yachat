@@ -7,8 +7,6 @@ from asyncio import StreamReader, StreamWriter
 from datetime import datetime, timedelta
 from functools import wraps
 
-import pytz
-
 from constants import ChatType
 from settings import (
     DEFAULT_BAN_PERIOD_HOURS,
@@ -18,13 +16,15 @@ from settings import (
     DEFAULT_MSG_LIMIT,
     DEFAULT_MSG_LIMIT_PERIOD_HOURS,
 )
-from db import Chat, ChatStorage, DbEncoder, Message, User
+from db import Chat, ChatStorage, Message, User
 from errors import (
     BannedError,
     MsgLimitExceededError,
     NotExistError,
     ValidationError,
 )
+import utils
+
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8001
@@ -89,13 +89,7 @@ class Server:
 
         return wrapper
 
-    @staticmethod
-    def serialize(data: dict):
-        return json.dumps(data, indent=2, cls=DbEncoder)
 
-    @staticmethod
-    def now():
-        return pytz.timezone("Europe/Moscow").localize(datetime.now())
 
     async def parse(self, message: str = ""):
         if not message:
@@ -107,7 +101,7 @@ class Server:
             result = await self.URL_METHOD_ACTION_MAP[url][method](json_body)
         except (ValueError, KeyError, TypeError) as error:
             logger.exception(error)
-            result = self.serialize({"fail": str(error)})
+            return utils.serialize({"fail": "Server Internal error"})
         else:
             return result
 
@@ -115,7 +109,7 @@ class Server:
         is_target_msg = lambda obj: (
             obj.author == user.id
             and obj.created
-            > self.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
+            > utils.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
         )
         target_is_default_chat = cursor.get_default_chat_id() == str(chat.id)
         msg_count_exceeds_limit = (
@@ -133,7 +127,7 @@ class Server:
         author = cursor.get_user(peer)
         chat = cursor.get_chat(cursor.get_default_chat_id())
         chat.enter(author)
-        return self.serialize({"token": peer})
+        return utils.serialize({"token": peer})
 
     @connect_db()
     def get_status(self, cursor, body: dict):
@@ -143,9 +137,9 @@ class Server:
         chats_with_user = list(
             filter(lambda obj: user.id in obj.authors, chats)
         )
-        return self.serialize(
+        return utils.serialize(
             {
-                "time": self.now(),
+                "time": utils.now(),
                 "connections_db_max": cursor.db.max_connections,
                 "connections_db_now": len(cursor.db.connections),
                 "chat_default": cursor.get_default_chat_id(),
@@ -167,7 +161,7 @@ class Server:
         chats_with_user = list(
             filter(lambda obj: user.id in obj.authors, chats)
         )
-        return self.serialize(
+        return utils.serialize(
             {
                 "chats": [
                     chat.serialize(msg_count) for chat in chats_with_user
@@ -184,7 +178,7 @@ class Server:
             raise NotExistError
         msg_count = body.get("msg_count") or DEFAULT_MSG_COUNT
 
-        return self.serialize(
+        return utils.serialize(
             {
                 "history": chat.serialize(msg_count),
             }
@@ -209,7 +203,7 @@ class Server:
             p2p_chat.enter(other_user)
         else:
             p2p_chat = chats[0]
-        return self.serialize({"chat_id": p2p_chat_id})
+        return utils.serialize({"chat_id": p2p_chat_id})
 
     @connect_db()
     def leave(self, cursor, body: dict):
@@ -222,7 +216,7 @@ class Server:
             raise NotExistError
 
         chat.leave(author)
-        return self.serialize({})
+        return utils.serialize({})
 
     @connect_db()
     def add_message(self, cursor, body: dict):
@@ -246,13 +240,13 @@ class Server:
 
         new_message = Message(
             uuid.uuid4(),
-            self.now(),
+            utils.now(),
             author.id,
             text=message,
             is_comment_on=comment_on,
         )
         chat.add_message(new_message)
-        return self.serialize({"id": new_message.id})
+        return utils.serialize({"id": new_message.id})
 
     @connect_db()
     def report_user(self, cursor, body: dict):
@@ -281,11 +275,11 @@ class Server:
 
         complaint_id = cursor.create_complaint(
             author=author.id,
-            created=self.now(),
+            created=utils.now(),
             reported_user=reported_user.id,
             reason=reason,
         )
-        return self.serialize({"id": complaint_id})
+        return utils.serialize({"id": complaint_id})
 
     async def client_connected_callback(
         self, reader: StreamReader, writer: StreamWriter
@@ -341,7 +335,7 @@ class Server:
             user = cursor.get_user(str(bid.reported_user))
             if user.reported_times + 1 == DEFAULT_MAX_COMPLAINT_COUNT:
                 user.is_banned = True
-                user.banned_when = self.now()
+                user.banned_when = utils.now()
             else:
                 user.reported_times += 1
             bid.reviewed = True
@@ -353,7 +347,7 @@ class Server:
                 user.is_banned
                 and user.banned_when
                 + timedelta(hours=DEFAULT_BAN_PERIOD_HOURS)
-                < self.now()
+                < utils.now()
             ):
                 user.is_banned = False
                 user.banned_when = None
