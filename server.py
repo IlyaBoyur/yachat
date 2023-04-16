@@ -78,8 +78,8 @@ class Server:
                     result = func(self, cursor, *args, **kwargs)
 
                 except Exception as exception:
-                    logger.exception(exception)
-                    result = self.serialize({"fail": str(exception)})
+                    logger.exception("Error while running db operation")
+                    result = self.serialize({"fail": "Server Internal error"})
                 finally:
                     cursor.disconnect()
                     logger.info(f"Disconnected {user} from db")
