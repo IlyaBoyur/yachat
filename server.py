@@ -4,7 +4,7 @@ import logging
 import signal
 import uuid
 from asyncio import StreamReader, StreamWriter
-from datetime import datetime, timedelta
+from datetime import timedelta
 from functools import wraps
 from typing import Any, Callable
 
@@ -79,7 +79,7 @@ class Server:
 
                     result = func(self, cursor, *args, **kwargs)
 
-                except Exception as exception:
+                except Exception:
                     logger.exception("Error while running db operation")
                     raise
                 finally:
@@ -117,7 +117,7 @@ class Server:
         ) as error:
             logger.exception("Error caused by user actions")
             return utils.serialize({"fail": str(error)})
-        except (ValueError, KeyError, TypeError) as error:
+        except (ValueError, KeyError, TypeError):
             logger.exception(ERROR_NOT_SUPPORTED)
             return utils.serialize({"fail": ERROR_NOT_SUPPORTED})
         except Exception:
@@ -127,11 +127,13 @@ class Server:
     def check_msg_limit_exceeded(
         self, cursor: ChatStorageCursor, user: User, chat: Chat
     ) -> bool:
-        is_target_msg = lambda obj: (
-            obj.author == user.id
-            and obj.created
-            > utils.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
-        )
+        def is_target_msg(obj):
+            return (
+                obj.author == user.id
+                and obj.created
+                > utils.now() - timedelta(hours=DEFAULT_MSG_LIMIT_PERIOD_HOURS)
+            )
+
         target_is_default_chat = cursor.get_default_chat_id() == str(chat.id)
         msg_count_exceeds_limit = (
             len(list(filter(is_target_msg, chat.messages.values())))

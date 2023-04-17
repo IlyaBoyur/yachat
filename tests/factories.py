@@ -1,6 +1,5 @@
 import factory.fuzzy
 
-from constants import ChatType
 from db import Chat, Complaint, Message
 
 
