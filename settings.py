@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Server Settings
 DEFAULT_HOST = os.getenv("HOST") or "127.0.0.1"
