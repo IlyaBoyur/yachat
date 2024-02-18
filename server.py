@@ -51,8 +51,8 @@ class Server:
         self.host = host
         self.port = port
         self.limit = limit
-        self.MSG_LIMIT_ENABLED = msg_limit_enabled
-        self.MODERATION_CYCLE_SECS = moderation_cycle_secs
+        self.msg_limit_enabled = msg_limit_enabled
+        self.moderation_cycle_secs = moderation_cycle_secs
         self.database = ChatStorage()
         # URL map
         self.URL_METHOD_ACTION_MAP = self.create_url_method_action_map()
@@ -233,7 +233,7 @@ class Server:
         )
         message = body.get("message")
 
-        if self.MSG_LIMIT_ENABLED and self.check_msg_limit_exceeded(
+        if self.msg_limit_enabled and self.check_msg_limit_exceeded(
             cursor, author, chat
         ):
             raise MsgLimitExceededError
@@ -332,10 +332,10 @@ class Server:
         while True:
             await self.check_reported_users()
             await self.check_unban()
-            await asyncio.sleep(self.MODERATION_CYCLE_SECS)
+            await asyncio.sleep(self.moderation_cycle_secs)
 
     @connect_db(user=MODERATOR)
-    def check_reported_users(self, cursor) -> None:
+    def check_reported_users(self, cursor: ChatStorageCursor) -> None:
         for bid in cursor.get_complaint_list():
             if bid.reviewed:
                 continue
@@ -348,7 +348,7 @@ class Server:
             bid.reviewed = True
 
     @connect_db(user=MODERATOR)
-    def check_unban(self, cursor) -> None:
+    def check_unban(self, cursor: ChatStorageCursor) -> None:
         for user in cursor.get_user_list():
             if (
                 user.is_banned
